@@ -19,4 +19,25 @@ Where the top priority for the data repo was correctness, here we're taking that
 Endpoints
 ---------
 
-yada yada
+
+### Courses
+
+Courses are identified by their three-digit (plus a letter sometimes) code, under their subject.
+
+`GET /courses/#{subject}/` returns a list of all courses for a given subject
+
+`GET /courses/#{subject}/#{course_code}` retrieves details about a given course
+
+Sample course:
+
+```YAML
+name: Computer Architecture
+code: 272
+subject:
+  name: Computer Engineering
+  code: CMPE
+  href: /subjects/CMPE
+href: /courses/CMPE/272
+
+... (plus a lot more stuff)
+```
