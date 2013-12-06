@@ -1,0 +1,14 @@
+
+# Python bytecode
+*.py[co]
+
+# Annoying python thing
+__pycache__/
+
+# Unit test / coverage reports
+.coverage
+.tox
+nosetests.xml
+
+# Conventional virtualenv dir for people who haven't yet realized how great virtualenvwrapper is
+venv/
