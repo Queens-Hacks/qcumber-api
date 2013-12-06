@@ -9,20 +9,19 @@
     or use the the test command from the manage.py script to run the suite.
 """
 
+import json
 from unittest import TestCase
 from werkzeug.test import Client
 from werkzeug.wrappers import BaseResponse
 from werkzeug.exceptions import BadRequest
-from api import dummy_json_app, DataTransformer
+from api import DataTransformer
 
 
-class TestJsonDummy(TestCase):
-    def test_dummy(self):
-        c = Client(dummy_json_app, BaseResponse)
-        resp = c.get('/')
-        self.assertEqual(resp.status_code, 200)
-        self.assertEqual(resp.get_data(as_text=True),
-                         '{"message": "hello world"}')
+def dummy_json_app(environ, start_response):
+    """Stupid app that sends a deep message: hello world"""
+    data = {'message': 'hello world'}
+    response = BaseResponse(json.dumps(data), mimetype='application/json')
+    return response(environ, start_response)
 
 
 class TestDataTransformer(TestCase):

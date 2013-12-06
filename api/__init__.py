@@ -24,13 +24,6 @@ from werkzeug import abort
 from werkzeug.wrappers import BaseRequest, AcceptMixin, BaseResponse
 
 
-def dummy_json_app(environ, start_response):
-    """Stupid app that sends a deep message: hello world"""
-    data = {'message': 'hello world'}
-    response = BaseResponse(json.dumps(data), mimetype='application/json')
-    return response(environ, start_response)
-
-
 class MixinRequest(BaseRequest, AcceptMixin):
     pass
 
@@ -56,7 +49,7 @@ class DataTransformer(object):
 
         # can we satisfy the accept at all?
         if target is None:
-            abort(400)
+            abort(406)
 
         # transform body to json
         resp = BaseResponse.from_app(self.app, environ)
@@ -80,4 +73,7 @@ class FieldLimiter(object):
     def __init__(self, app):
         self.app = app
     def __call__(self, environ, start_response):
+        req = BaseRequest(environ)
+
+
         return self.app(environ, start_response)
