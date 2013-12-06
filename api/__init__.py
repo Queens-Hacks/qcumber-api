@@ -30,7 +30,7 @@ def dummy_json_app(environ, start_response):
 
 
 class DataTransformer(object):
-    """Flexible accept, nice and normalized for inernal use.
+    """Flexible accept, nice and normalized for internal use.
 
     Requests:
      * Form-encoded POST requests are transformed to flat key/value json.
