@@ -12,7 +12,8 @@
 from unittest import TestCase
 from werkzeug.test import Client
 from werkzeug.wrappers import BaseResponse
-from api import dummy_json_app
+from werkzeug.exceptions import BadRequest
+from api import dummy_json_app, DataTransformer
 
 
 class TestJsonDummy(TestCase):
@@ -22,6 +23,21 @@ class TestJsonDummy(TestCase):
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(resp.get_data(as_text=True),
                          '{"message": "hello world"}')
+
+
+class TestDataTransformer(TestCase):
+
+    def setUp(self):
+        self.app = DataTransformer(dummy_json_app)
+
+    def test_accept_json(self):
+        c = Client(self.app, BaseResponse)
+        resp = c.get('/', headers=[('Accept', 'application/json')])
+
+    def test_reject_blah(self):
+        c = Client(self.app, BaseResponse)
+        with self.assertRaises(BadRequest):
+            resp = c.get('/', headers=[('Accept', 'blah/blah')])
 
 
 if __name__ == '__main__':

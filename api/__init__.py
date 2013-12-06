@@ -19,14 +19,20 @@
 """
 
 import json
-from werkzeug.wrappers import Response
+import warnings
+from werkzeug import abort
+from werkzeug.wrappers import BaseRequest, AcceptMixin, BaseResponse
 
 
 def dummy_json_app(environ, start_response):
     """Stupid app that sends a deep message: hello world"""
     data = {'message': 'hello world'}
-    response = Response(json.dumps(data), mimetype='application/json')
+    response = BaseResponse(json.dumps(data), mimetype='application/json')
     return response(environ, start_response)
+
+
+class MixinRequest(BaseRequest, AcceptMixin):
+    pass
 
 
 class DataTransformer(object):
@@ -43,11 +49,28 @@ class DataTransformer(object):
 
     def __init__(self, app):
         self.app = app
-    def __call__(self, environ, start_response):
 
-        def _start_response(status, headers, *args, **kwargs):
-            return start_response(status, headers, *args, **kwargs)
-        return self.app(environ, _start_response)
+    def __call__(self, environ, start_response):
+        req = MixinRequest(environ)
+        target = req.accept_mimetypes.best_match(['application/json'])
+
+        # can we satisfy the accept at all?
+        if target is None:
+            abort(400)
+
+        # transform body to json
+        resp = BaseResponse.from_app(self.app, environ)
+        body = resp.get_data(as_text=True)
+        if resp.headers.get('Content-Type') != 'application/json':
+            warnings.warn('transforming non-JSON data!')
+            data = body
+        else:
+            data = json.loads(body)
+
+        if target == 'application/json':
+            serial = json.dumps(data)
+            resp.set_data(serial)
+            return resp(environ, start_response)
 
 
 class FieldLimiter(object):
@@ -58,4 +81,3 @@ class FieldLimiter(object):
         self.app = app
     def __call__(self, environ, start_response):
         return self.app(environ, start_response)
-
