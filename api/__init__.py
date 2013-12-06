@@ -69,11 +69,35 @@ class DataTransformer(object):
 class FieldLimiter(object):
     """Pares response data down to that set by a ?fields= query parameter.
     Assumes JSON response data from app.
+
+    Limit fields by providing fields= query args. EG:
+    GET http://whatever/?fields=code&fields=subject
+
+    The limits only work for top-level keys in structured response bodies.
     """
     def __init__(self, app):
         self.app = app
     def __call__(self, environ, start_response):
-        req = BaseRequest(environ)
+        request = BaseRequest(environ)
+        if 'fields' not in request.args:
+            # don't need to limit fields, skip this layer
+            return self.app(environ, start_response)
+        fields = request.args.getlist('fields')
 
+        # grab the response so we can limit the fields
+        response = BaseResponse.from_app(self.app, environ)
+        body = response.get_data(as_text=True)
 
-        return self.app(environ, start_response)
+        data = json.loads(body)
+
+        # have they asked for fields that don't exist?
+        if not all(field in data for field in fields):
+            abort(400)
+
+        # limit the data
+        limited_data = {k:v for k, v in data.items() if k in fields}
+
+        # set it as the new body
+        cereal = json.dumps(limited_data)
+        response.set_data(cereal)
+        return response(environ, start_response)

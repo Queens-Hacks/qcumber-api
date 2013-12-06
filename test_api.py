@@ -13,14 +13,17 @@ import json
 from unittest import TestCase
 from werkzeug.test import Client
 from werkzeug.wrappers import BaseResponse
-from werkzeug.exceptions import NotAcceptable
-from api import DataTransformer
+from werkzeug.exceptions import NotAcceptable, BadRequest
+from api import DataTransformer, FieldLimiter
+
+
+test_data = {'message': 'hello world', 'errors': []}
+json_resp = lambda resp: json.loads(resp.get_data(as_text=True))
 
 
 def dummy_json_app(environ, start_response):
     """Stupid app that sends a deep message: hello world"""
-    data = {'message': 'hello world'}
-    response = BaseResponse(json.dumps(data), mimetype='application/json')
+    response = BaseResponse(json.dumps(test_data), mimetype='application/json')
     return response(environ, start_response)
 
 
@@ -32,11 +35,37 @@ class TestDataTransformer(TestCase):
     def test_accept_json(self):
         c = Client(self.app, BaseResponse)
         resp = c.get('/', headers=[('Accept', 'application/json')])
+        self.assertEqual(json_resp(resp), test_data)
 
     def test_reject_blah(self):
         c = Client(self.app, BaseResponse)
         with self.assertRaises(NotAcceptable):
             resp = c.get('/', headers=[('Accept', 'blah/blah')])
+
+
+class TestFieldLimiter(TestCase):
+
+    def setUp(self):
+        app = FieldLimiter(dummy_json_app)
+        self.client = Client(app, BaseResponse)
+
+    def test_no_limiting(self):
+        resp = self.client.get('/')
+        self.assertEqual(json_resp(resp), test_data)
+
+    def test_limit_one(self):
+        resp = self.client.get('/?fields=message')
+        self.assertEqual(json_resp(resp), {'message': test_data['message']})
+
+    def test_limit_multi(self):
+        fields = ('message', 'errors')
+        resp = self.client.get('/?fields={}&fields={}'.format(*fields))
+        expecting = {k:v for k, v in test_data.items() if k in fields}
+        self.assertEqual(json_resp(resp), expecting)
+
+    def test_limit_bad(self):
+        with self.assertRaises(BadRequest):
+            resp = self.client.get('/?fields=nonexistentfield')
 
 
 if __name__ == '__main__':

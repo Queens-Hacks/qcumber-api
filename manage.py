@@ -51,7 +51,7 @@ def runserver(host="127.0.0.1", port="5000"):
               'Have you installed requirements ($ pip install -r requirements'
               '.txt) or perhaps forgotten to activate a virtualenv?')
         sys.exit(1)
-    from api import dummy_json_app as app
+    from api import app as app
     run_simple(host, port_num, app, use_debugger=True, use_reloader=True)
 
 
