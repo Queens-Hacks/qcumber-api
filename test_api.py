@@ -13,7 +13,7 @@ import json
 from unittest import TestCase
 from werkzeug.test import Client
 from werkzeug.wrappers import BaseResponse
-from werkzeug.exceptions import BadRequest
+from werkzeug.exceptions import NotAcceptable
 from api import DataTransformer
 
 
@@ -35,7 +35,7 @@ class TestDataTransformer(TestCase):
 
     def test_reject_blah(self):
         c = Client(self.app, BaseResponse)
-        with self.assertRaises(BadRequest):
+        with self.assertRaises(NotAcceptable):
             resp = c.get('/', headers=[('Accept', 'blah/blah')])
 
 
