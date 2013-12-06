@@ -30,6 +30,7 @@ def dummy_json_app(environ, start_response):
 
 
 class DataTransformer(object):
+
     """Flexible accept, nice and normalized for internal use.
 
     Requests:
@@ -43,6 +44,7 @@ class DataTransformer(object):
 
     def __init__(self, app):
         self.app = app
+
     def __call__(self, environ, start_response):
 
         def _start_response(status, headers, *args, **kwargs):
@@ -51,11 +53,13 @@ class DataTransformer(object):
 
 
 class FieldLimiter(object):
+
     """Pares response data down to that set by a ?fields= query parameter.
     Assumes JSON response data from app.
     """
+
     def __init__(self, app):
         self.app = app
+
     def __call__(self, environ, start_response):
         return self.app(environ, start_response)
-
