@@ -33,7 +33,7 @@ class AcceptRequest(BaseRequest, AcceptMixin):
 
 
 class BeforeAfterMiddleware(object):
-    """A simple middleware base class providing a before/after inerface"""
+    """A simple middleware base class providing a before/after interface"""
     request_wrapper = None
     response_wrapper = None
 
