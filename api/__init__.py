@@ -24,11 +24,40 @@ from werkzeug import abort
 from werkzeug.wrappers import BaseRequest, AcceptMixin, BaseResponse
 
 
-class MixinRequest(BaseRequest, AcceptMixin):
+class AcceptRequest(BaseRequest, AcceptMixin):
     pass
 
 
-class DataTransformer(object):
+class BeforeAfterMiddleware(object):
+    """A simple middleware base class providing a before/after inerface"""
+    request_wrap = None
+    response_wrap = None
+
+    def __init__(self, app):
+        self.app = app
+
+    def before(self, request):
+        pass
+
+    def after(self, request, response):
+        pass
+
+    def __call__(self, environ, start_response):
+        if self.request_wrap is not None:
+            request = self.request_wrap(environ)
+        self.before(request)
+
+        if self.response_wrap is not None:
+            response = self.response_wrap.from_app(self.app, environ)
+        self.after(request, response)
+
+        if self.response_wrap is not None:
+            return response(environ, start_response)
+        else:
+            return app(environ, start_response)
+
+
+class DataTransformer(BeforeAfterMiddleware):
     """Flexible accept, nice and normalized for inernal use.
 
     Requests:
@@ -39,34 +68,28 @@ class DataTransformer(object):
      * JSON-encoded response bodies are transformed to whatever the client
        accepts.
     """
+    request_wrap = AcceptRequest
+    response_wrap = BaseResponse
 
-    def __init__(self, app):
-        self.app = app
-
-    def __call__(self, environ, start_response):
-        req = MixinRequest(environ)
-        target = req.accept_mimetypes.best_match(['application/json'])
-
-        # can we satisfy the accept at all?
-        if target is None:
+    def before(self, request):
+        self.target = request.accept_mimetypes.best_match(['application/json'])
+        if self.target is None:
             abort(406)
 
-        # transform body to json
-        resp = BaseResponse.from_app(self.app, environ)
-        body = resp.get_data(as_text=True)
-        if resp.headers.get('Content-Type') != 'application/json':
-            warnings.warn('transforming non-JSON data!')
+    def after(self, request, response):
+        body = response.get_data(as_text=True)
+        if response.headers.get('Content-Type') != 'application/json':
+            warnings.warn('leaving non-JSON datak as a string')
             data = body
         else:
             data = json.loads(body)
 
-        if target == 'application/json':
-            serial = json.dumps(data)
-            resp.set_data(serial)
-            return resp(environ, start_response)
+        if self.target == 'application/json':
+            cereal = json.dumps(data)
+            response.set_data(cereal)
 
 
-class FieldLimiter(object):
+class FieldLimiter(BeforeAfterMiddleware):
     """Pares response data down to that set by a ?fields= query parameter.
     Assumes JSON response data from app.
 
@@ -75,29 +98,25 @@ class FieldLimiter(object):
 
     The limits only work for top-level keys in structured response bodies.
     """
-    def __init__(self, app):
-        self.app = app
-    def __call__(self, environ, start_response):
-        request = BaseRequest(environ)
+    request_wrap = BaseRequest
+    response_wrap = BaseResponse
+    def before(self, request):
         if 'fields' not in request.args:
-            # don't need to limit fields, skip this layer
-            return self.app(environ, start_response)
-        fields = request.args.getlist('fields')
+            # don't need to limit any fields
+            self.skip = True
+            return
+        self.fields = request.args.getlist('fields')
 
-        # grab the response so we can limit the fields
-        response = BaseResponse.from_app(self.app, environ)
+
+    def after(self, request, response):
+        if getattr(self, 'skip', False):
+            return
         body = response.get_data(as_text=True)
-
         data = json.loads(body)
-
         # have they asked for fields that don't exist?
-        if not all(field in data for field in fields):
+        if not all(field in data for field in self.fields):
             abort(400)
 
-        # limit the data
-        limited_data = {k:v for k, v in data.items() if k in fields}
-
-        # set it as the new body
+        limited_data = {k:v for k, v in data.items() if k in self.fields}
         cereal = json.dumps(limited_data)
         response.set_data(cereal)
-        return response(environ, start_response)
