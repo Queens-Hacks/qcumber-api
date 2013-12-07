@@ -187,7 +187,7 @@ class DataProvider(object):
     """Reads data from the yaml files."""
 
     def __init__(self):
-        self.RESOURCES = ['courses', 'secitons', 'subjects', 'instructors']
+        self.RESOURCES = ['courses', 'sections', 'subjects', 'instructors']
 
         for attr in self.RESOURCES:
             setattr(self, attr, [])
