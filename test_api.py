@@ -74,7 +74,7 @@ class TestFieldLimiter(TestCase):
     def test_limit_multi(self):
         fields = ('message', 'errors')
         resp = self.client.get('/?fields={}&fields={}'.format(*fields))
-        expecting = {k:v for k, v in test_data.items() if k in fields}
+        expecting = {k: v for k, v in test_data.items() if k in fields}
         self.assertEqual(json_resp(resp), expecting)
 
     def test_limit_bad(self):

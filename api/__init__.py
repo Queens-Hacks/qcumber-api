@@ -55,7 +55,7 @@ class BeforeAfterMiddleware(object):
 
         # Defer  to the wrapped app, then do our cleanup n stuff
         response = self.response_wrapper and self.response_wrapper.from_app(
-                                                    self.app, environ) or None
+            self.app, environ) or None
         self.after(request, response)
 
         if self.response_wrapper is not None:
@@ -107,6 +107,7 @@ class FieldLimiter(BeforeAfterMiddleware):
     """
     request_wrapper = BaseRequest
     response_wrapper = BaseResponse
+
     def before(self, request):
         if 'fields' not in request.args:
             # don't need to limit any fields
@@ -123,7 +124,7 @@ class FieldLimiter(BeforeAfterMiddleware):
         if not all(field in data for field in self.fields):
             abort(400)
 
-        limited_data = {k:v for k, v in data.items() if k in self.fields}
+        limited_data = {k: v for k, v in data.items() if k in self.fields}
         cereal = json.dumps(limited_data)
         response.set_data(cereal)
 
