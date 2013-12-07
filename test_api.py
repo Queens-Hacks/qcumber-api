@@ -14,7 +14,12 @@ from unittest import TestCase
 from werkzeug.test import Client
 from werkzeug.wrappers import BaseResponse
 from werkzeug.exceptions import NotAcceptable, BadRequest
-from api import DataTransformer, FieldLimiter
+
+from api import (
+    BeforeAfterMiddleware,
+    DataTransformer,
+    FieldLimiter,
+)
 
 
 test_data = {'message': 'hello world', 'errors': []}
@@ -25,6 +30,15 @@ def dummy_json_app(environ, start_response):
     """Stupid app that sends a deep message: hello world"""
     response = BaseResponse(json.dumps(test_data), mimetype='application/json')
     return response(environ, start_response)
+
+
+class TestMiddlewareBase(TestCase):
+
+    def test_passthrough_mw(self):
+        app = BeforeAfterMiddleware(dummy_json_app)
+        c = Client(app, BaseResponse)
+        response = c.get('/')
+        self.assertEqual(json_resp(response), test_data)
 
 
 class TestDataTransformer(TestCase):

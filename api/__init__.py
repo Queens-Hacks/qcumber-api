@@ -30,31 +30,34 @@ class AcceptRequest(BaseRequest, AcceptMixin):
 
 class BeforeAfterMiddleware(object):
     """A simple middleware base class providing a before/after inerface"""
-    request_wrap = None
-    response_wrap = None
+    request_wrapper = None
+    response_wrapper = None
 
     def __init__(self, app):
+        # Keep a reference to the wsgi app we're wrapping
         self.app = app
 
     def before(self, request):
-        pass
+        """Do stuff before deferring to the wrapped app."""
 
     def after(self, request, response):
-        pass
+        """Do more stuff after getting a response from the wrapped app"""
 
     def __call__(self, environ, start_response):
-        if self.request_wrap is not None:
-            request = self.request_wrap(environ)
+        """Process a request"""
+        # Get the request if we need it, then do our before stuff
+        request = self.request_wrapper and self.request_wrapper(environ) or None
         self.before(request)
 
-        if self.response_wrap is not None:
-            response = self.response_wrap.from_app(self.app, environ)
+        # Defer  to the wrapped app, then do our cleanup n stuff
+        response = self.response_wrapper and self.response_wrapper.from_app(
+                                                    self.app, environ) or None
         self.after(request, response)
 
-        if self.response_wrap is not None:
+        if self.response_wrapper is not None:
             return response(environ, start_response)
         else:
-            return app(environ, start_response)
+            return self.app(environ, start_response)
 
 
 class DataTransformer(BeforeAfterMiddleware):
@@ -68,8 +71,8 @@ class DataTransformer(BeforeAfterMiddleware):
      * JSON-encoded response bodies are transformed to whatever the client
        accepts.
     """
-    request_wrap = AcceptRequest
-    response_wrap = BaseResponse
+    request_wrapper = AcceptRequest
+    response_wrapper = BaseResponse
 
     def before(self, request):
         self.target = request.accept_mimetypes.best_match(['application/json'])
@@ -98,15 +101,14 @@ class FieldLimiter(BeforeAfterMiddleware):
 
     The limits only work for top-level keys in structured response bodies.
     """
-    request_wrap = BaseRequest
-    response_wrap = BaseResponse
+    request_wrapper = BaseRequest
+    response_wrapper = BaseResponse
     def before(self, request):
         if 'fields' not in request.args:
             # don't need to limit any fields
             self.skip = True
             return
         self.fields = request.args.getlist('fields')
-
 
     def after(self, request, response):
         if getattr(self, 'skip', False):
