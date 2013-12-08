@@ -8,8 +8,6 @@
 
 import sys
 from functools import wraps
-
-
 def command(func, _funcs={}):
     """Decorate functions with this to register them as commands"""
 
