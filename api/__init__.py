@@ -26,6 +26,8 @@ from werkzeug.wrappers import (BaseRequest, AcceptMixin, Request, BaseResponse,
 from werkzeug.exceptions import (NotFound, InternalServerError, NotImplemented,
                                  HTTPException)
 from werkzeug.routing import Map, Rule
+
+
 class AcceptRequest(BaseRequest, AcceptMixin):
     pass
 
