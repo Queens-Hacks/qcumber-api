@@ -1,3 +1,9 @@
+"""
+    api.data
+    ~~~~~~~~~~~~~~
+
+    Loads data and provides interface for it.
+"""
 
 
 class DataProvider(object):
