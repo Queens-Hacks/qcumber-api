@@ -56,11 +56,24 @@ def runserver(host="127.0.0.1", port="5000"):
 
 
 @command
-def test():
-    """Run the app's test suite"""
+def clean():
+    """Clean up __pycache__ folders (left behind from testing perhaps)"""
+    import os
+    import shutil
+    for root, subfolders, files in os.walk('.'):
+        if '__pycache__' in subfolders:
+            garbage = os.path.join(root, '__pycache__')
+            shutil.rmtree(garbage)   
+
+
+@command
+def test(cleanup=True):
+    """Run the app's test suite. Cleans up after by default."""
     import unittest
     suite = unittest.TestLoader().discover('.')  # get all the tests
     unittest.TextTestRunner(verbosity=2).run(suite)
+    if cleanup:
+        clean()
 
 
 if __name__ == '__main__':
