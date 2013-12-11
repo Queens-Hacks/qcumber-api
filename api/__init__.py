@@ -27,9 +27,8 @@ from api.data import data_provider
 
 class ResourceApi(object):
     """Provides url routing for the api"""
-    def __init__(self, resource, data_provider):
+    def __init__(self, resource):
         self.resource = resource
-        self.data_provider = data_provider
         self.url_map = Map([
             Rule('/', endpoint=self.list_handler),
             Rule('/<uid>/', endpoint=self.item_handler)
@@ -37,7 +36,7 @@ class ResourceApi(object):
 
     def list_handler(self, request):
         if request.method == 'GET':
-            item_list = self.data_provider.get_list(self.resource)
+            item_list = data_provider.get_list(self.resource)
             if item_list is not None:
                 return self.render_json({self.resource: item_list})
             else:
@@ -47,7 +46,7 @@ class ResourceApi(object):
 
     def item_handler(self, request, uid):
         if request.method == 'GET':
-            item = self.data_provider.get_item(self.resource, uid)
+            item = data_provider.get_item(self.resource, uid)
             if item is not None:
                 return self.render_json(item)
             else:
@@ -80,10 +79,10 @@ def root_app(environ, start_response):
     response = Response(json.dumps({"root": "yup"}), mimetype='application/json')
     return response(environ, start_response)
 
-course_app = ResourceApi('courses', data_provider)
-sections_app = ResourceApi('sections', data_provider)
-subjects_app = ResourceApi('subjects', data_provider)
-instructors_app = ResourceApi('instructors', data_provider)
+course_app = ResourceApi('courses')
+sections_app = ResourceApi('sections')
+subjects_app = ResourceApi('subjects')
+instructors_app = ResourceApi('instructors')
 
 app = DispatcherMiddleware(root_app, {
     '/courses': course_app,
