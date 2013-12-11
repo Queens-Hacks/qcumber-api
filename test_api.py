@@ -15,7 +15,7 @@ from werkzeug.test import Client
 from werkzeug.wrappers import BaseResponse
 from werkzeug.exceptions import NotAcceptable, BadRequest
 
-from api import (
+from api.middleware import (
     BeforeAfterMiddleware,
     DataTransformer,
     FieldLimiter,
