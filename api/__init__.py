@@ -24,6 +24,7 @@ from werkzeug.exceptions import (NotFound, InternalServerError, NotImplemented,
                                  HTTPException)
 from werkzeug.routing import Map, Rule
 from werkzeug.wsgi import DispatcherMiddleware
+from api.data import data_provider
 
 
 class ResourceApi(object):
@@ -76,48 +77,10 @@ class ResourceApi(object):
         return self.wsgi_app(environ, start_response)
 
 
-class DataProvider(object):
-    """Reads data from the yaml files."""
-    def __init__(self):
-        self.RESOURCES = ['courses', 'sections', 'subjects', 'instructors']
-
-        for attr in self.RESOURCES:
-            setattr(self, attr, {})
-        self.read_files()
-
-    def read_files(self):
-        # mock some data
-        self.courses = {
-            "ANAT100": {
-                "id": "ANAT100",
-                "data": "sample data for ANAT100"
-            },
-            "ANAT200": {
-                "id": "ANAT200",
-                "data": "More!!! sample data for ANAT200"
-            }
-        }
-        pass
-
-    def get_list(self, resource):
-        if hasattr(self, resource):
-            return getattr(self, resource).values()
-        return None
-
-    def get_item(self, resource, uid):
-        if hasattr(self, resource):
-            r_dict = getattr(self, resource)
-            if uid in r_dict:
-                return r_dict[uid]
-        return None
-
-
 def root_app(environ, start_response):
     """Mock of the root app"""
-    response = BaseResponse(json.dumps({"root": "yup"}), mimetype='application/json')
+    response = Response(json.dumps({"root": "yup"}), mimetype='application/json')
     return response(environ, start_response)
-
-data_provider = DataProvider()
 
 course_app = ResourceApi('courses', data_provider)
 sections_app = ResourceApi('sections', data_provider)
