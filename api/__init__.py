@@ -18,10 +18,8 @@
 """
 
 import json
-import warnings
 from werkzeug.wrappers import Request, Response
-from werkzeug.exceptions import (NotFound, InternalServerError, NotImplemented,
-                                 HTTPException)
+from werkzeug.exceptions import (NotFound, InternalServerError, NotImplemented, HTTPException)
 from werkzeug.routing import Map, Rule
 from werkzeug.wsgi import DispatcherMiddleware
 from api.data import data_provider
@@ -45,7 +43,7 @@ class ResourceApi(object):
             else:
                 raise InternalServerError()
         else:
-            raise NotImplementedError()
+            raise NotImplemented()
 
     def item_handler(self, request, uid):
         if request.method == 'GET':
@@ -55,7 +53,7 @@ class ResourceApi(object):
             else:
                 raise NotFound()
         else:
-            raise NotImplementedError()
+            raise NotImplemented()
 
     def render_json(self, data):
         return Response(json.dumps(data), mimetype='application/json')
