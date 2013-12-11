@@ -63,7 +63,7 @@ def clean():
     for root, subfolders, files in os.walk('.'):
         if '__pycache__' in subfolders:
             garbage = os.path.join(root, '__pycache__')
-            shutil.rmtree(garbage)   
+            shutil.rmtree(garbage)
 
 
 @command
