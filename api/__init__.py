@@ -21,21 +21,14 @@
 import json
 import warnings
 from werkzeug import abort
-from werkzeug.wrappers import (BaseRequest, AcceptMixin, Request, BaseResponse,
-                               Response)
+from werkzeug.wrappers import Request, Response
 from werkzeug.exceptions import (NotFound, InternalServerError, NotImplemented,
                                  HTTPException)
 from werkzeug.routing import Map, Rule
 
 
-class AcceptRequest(BaseRequest, AcceptMixin):
-    pass
-
-
 class BeforeAfterMiddleware(object):
     """A simple middleware base class providing a before/after interface"""
-    request_wrapper = None
-    response_wrapper = None
 
     def __init__(self, app):
         # Keep a reference to the wsgi app we're wrapping
@@ -49,19 +42,16 @@ class BeforeAfterMiddleware(object):
 
     def __call__(self, environ, start_response):
         """Process a request"""
-        # Get the request if we need it, then do our before stuff
-        request = self.request_wrapper and self.request_wrapper(environ) or None
+        # Set up the request and do our pre-processing
+        request = Request(environ)
         self.before(request)
 
         # Defer  to the wrapped app, then do our cleanup n stuff
-        response = self.response_wrapper and self.response_wrapper.from_app(
-            self.app, environ) or None
+        response = Response.from_app(self.app, environ)
         self.after(request, response)
 
-        if self.response_wrapper is not None:
-            return response(environ, start_response)
-        else:
-            return self.app(environ, start_response)
+        # finally, blah
+        return response(environ, start_response)
 
 
 class DataTransformer(BeforeAfterMiddleware):
@@ -75,8 +65,6 @@ class DataTransformer(BeforeAfterMiddleware):
      * JSON-encoded response bodies are transformed to whatever the client
        accepts.
     """
-    request_wrapper = AcceptRequest
-    response_wrapper = BaseResponse
 
     def before(self, request):
         self.target = request.accept_mimetypes.best_match(['application/json'])
@@ -105,8 +93,6 @@ class FieldLimiter(BeforeAfterMiddleware):
 
     The limits only work for top-level keys in structured response bodies.
     """
-    request_wrapper = BaseRequest
-    response_wrapper = BaseResponse
 
     def before(self, request):
         if 'fields' not in request.args:
