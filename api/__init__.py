@@ -7,14 +7,13 @@
     the refreshing course catalog for Queen's University.
 
 
-    Here is my (phil) proposed layering of the app stack:
+    The Stack:
 
-    HTTP nginx
-      SOCK gunicorn
-        WSGI data transformer (form-encoding -> json; json -> (json|xml|yaml|...))
-          WSGI field limiter
-            WSGI resource router (course|subject|instructor...)
-              WSGI resource app
+    HTTP Server
+      WSGI data transformer (form-encoding -> json; json -> (json|xml|yaml|...))
+        WSGI field limiter
+          WSGI resource router
+            WSGI resource app(s)
 
 """
 
