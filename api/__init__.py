@@ -24,6 +24,7 @@ from werkzeug.wrappers import Request, Response
 from werkzeug.exceptions import (NotFound, InternalServerError, NotImplemented,
                                  HTTPException)
 from werkzeug.routing import Map, Rule
+from werkzeug.wsgi import DispatcherMiddleware
 
 
 class BeforeAfterMiddleware(object):
@@ -114,40 +115,35 @@ class FieldLimiter(BeforeAfterMiddleware):
         response.set_data(cereal)
 
 
-class ResourceRouter(object):
+class ResourceApi(object):
     """Provides url routing for the api"""
-
-    def __init__(self, data_provider):
+    def __init__(self, resource, data_provider):
+        self.resource = resource
         self.data_provider = data_provider
-        self.url_map = Map([])
+        self.url_map = Map([
+            Rule('/', endpoint=self.list_handler),
+            Rule('/<uid>/', endpoint=self.item_handler)
+        ])
 
-        for resource in data_provider.RESOURCES:
-            endpoint_string = "/" + resource + "/"
-            self.url_map.add(Rule(endpoint_string, handler=self.list_handler, resource=resource))
-            self.url_map.add(Rule(endpoint_string + "<uid>", handler=self.item_handler, resource=resource))
-
-    def list_handler(self, request, resource):
+    def list_handler(self, request):
         if request.method == 'GET':
-            item_list = getattr(self.data_provider, resource)
+            item_list = self.data_provider.get_list(self.resource)
             if item_list is not None:
-                return self.render_json({resource: item_list})
+                return self.render_json({self.resource: item_list})
             else:
                 raise InternalServerError()
         else:
-            raise NotImplemented()
+            raise NotImplementedError()
 
-    def item_handler(self, request, resource, uid):
+    def item_handler(self, request, uid):
         if request.method == 'GET':
-            item_list = getattr(self.data_provider, resource)
-            if item_list is not None:
-                if uid in item_list:
-                    return self.render_json(item_list[uid])
-                else:
-                    raise NotFound()
+            item = self.data_provider.get_item(self.resource, uid)
+            if item is not None:
+                return self.render_json(item)
             else:
-                raise InternalServerError()
+                raise NotFound()
         else:
-            raise NotImplemented()
+            raise NotImplementedError()
 
     def render_json(self, data):
         return Response(json.dumps(data), mimetype='application/json')
@@ -155,8 +151,8 @@ class ResourceRouter(object):
     def dispatch_request(self, request):
         adapter = self.url_map.bind_to_environ(request.environ)
         try:
-            handler, resource, values = adapter.match()
-            return (handler)(request, resource, **values)
+            handler, values = adapter.match()
+            return (handler)(request, **values)
         except HTTPException as e:
             return e
 
@@ -171,13 +167,57 @@ class ResourceRouter(object):
 
 class DataProvider(object):
     """Reads data from the yaml files."""
-
     def __init__(self):
         self.RESOURCES = ['courses', 'sections', 'subjects', 'instructors']
 
         for attr in self.RESOURCES:
-            setattr(self, attr, [])
+            setattr(self, attr, {})
         self.read_files()
 
     def read_files(self):
-        assert True
+        # mock some data
+        self.courses = {
+            "ANAT100": {
+                "id": "ANAT100",
+                "data": "sample data for ANAT100"
+            },
+            "ANAT200": {
+                "id": "ANAT200",
+                "data": "More!!! sample data for ANAT200"
+            }
+        }
+        pass
+
+    def get_list(self, resource):
+        if hasattr(self, resource):
+            return getattr(self, resource).values()
+        return None
+
+    def get_item(self, resource, uid):
+        if hasattr(self, resource):
+            r_dict = getattr(self, resource)
+            if uid in r_dict:
+                return r_dict[uid]
+        return None
+
+
+def root_app(environ, start_response):
+    """Mock of the root app"""
+    response = BaseResponse(json.dumps({"root": "yup"}), mimetype='application/json')
+    return response(environ, start_response)
+
+data_provider = DataProvider()
+
+course_app = ResourceApi('courses', data_provider)
+sections_app = ResourceApi('sections', data_provider)
+subjects_app = ResourceApi('subjects', data_provider)
+instructors_app = ResourceApi('instructors', data_provider)
+
+app = DispatcherMiddleware(root_app, {
+    '/courses': course_app,
+    '/sections': sections_app,
+    '/subjects': subjects_app,
+    '/instructors': instructors_app
+})
+
+app = FieldLimiter(app)
