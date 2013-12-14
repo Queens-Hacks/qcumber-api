@@ -16,15 +16,39 @@ This code will also be responsible for managing writes to qcumber-data, so manag
 Install
 -------
 
+
+### 1. Python
+
 qcumber-api requires python version 2.7 or 3.3. To get set up, just grab the dependancies:
 
+
+### 2. Application Requirements
+
+You'll probably want to use a [virtualenv](http://www.virtualenv.org/en/latest/), maybe with [virtualenvwrapper](http://virtualenvwrapper.readthedocs.org/en/latest/).
+
 ```bash
-$ pip install -r requirements.txt
+(venv) $ pip install -r requirements.txt
 ```
+
+
+### 3. Tests & Formatting
+
 You'll also need to set up a precommit hook for `pep8` to keep with the style spec:
+
 ```bash
 $ ln -s ../../pre-commit.sh .git/hooks/pre-commit
 ```
+
+### 4. Local Configuration
+
+A couple variables need to be set. You can either create the file `api/local_config.py` and define the variables there, or export them to your environment. An example `local_config`:
+
+```python
+SECRET_KEY = '9wibR6AvTAGHx_-2lPn_AHWY6QEXfucKOMG9DUSQDung5mwp7kgvMa_R'
+DATA_REMOTE = https://github.com/Queens-Hacks/qcumber-data.git
+```
+
+At the moment, only those to variables are required. However, in case this readme becomes out of date, the definitive list of config variables can be found [in the config module](api/config.py#L39) on line 39.
 
 
 Usage
