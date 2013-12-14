@@ -1,4 +1,3 @@
-#!/
 """
     test_api
     ~~~~~~~~
@@ -9,17 +8,27 @@
     or use the the test command from the manage.py script to run the suite.
 """
 
+import os
 import json
+import shutil
+import tarfile
+import tempfile
 from unittest import TestCase
 from werkzeug.test import Client
 from werkzeug.wrappers import BaseResponse
 from werkzeug.exceptions import NotAcceptable, BadRequest
 
+import api
 from api.config import (
     REQUIRED,
+    variables,
     ConfigException,
     _GetitemProxy,
     get_config,
+)
+from api.data import (
+    NotEmptyRepoError,
+    clone,
 )
 from api.middleware import (
     BeforeAfterMiddleware,
@@ -70,6 +79,32 @@ class TestConfig(TestCase):
             config = get_config(variables, source)
 
 
+class TestData(TestCase):
+    local_repo = os.path.join(os.getcwd(), 'test', 'test_repo')
+
+    def setUpClass():
+        with tarfile.open(os.path.join(os.getcwd(), 'test', 'test_repo.tar')) as t:
+            t.extractall()
+
+    def setUp(self):
+        self.temp_dir = tempfile.mkdtemp()
+        api.config.update(DATA_REMOTE=self.local_repo,
+                          DATA_LOCAL=self.temp_dir)
+
+    def tearDown(self):
+        shutil.rmtree(self.temp_dir)
+
+    def tearDownClass():
+        shutil.rmtree(os.path.join(os.getcwd(), 'test', 'test_repo'))
+
+    def test_clone(self):
+        clone()
+        self.assertTrue(os.path.isdir(os.path.join(self.temp_dir, '.git')))
+        with self.assertRaises(NotEmptyRepoError):
+            clone()
+        clone(force=True)
+
+
 class TestMiddlewareBase(TestCase):
 
     def test_passthrough_mw(self):
@@ -118,8 +153,3 @@ class TestFieldLimiter(TestCase):
     def test_limit_bad(self):
         with self.assertRaises(BadRequest):
             resp = self.client.get('/?fields=nonexistentfield')
-
-
-if __name__ == '__main__':
-    from unittest import main
-    main()

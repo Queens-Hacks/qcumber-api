@@ -37,6 +37,19 @@ def help():
 
 
 @command
+def init(force=False):
+    """Set the api up: clone the data repo, etc."""
+    import api
+    try:
+        api.data.clone(force)
+    except api.data.NotEmptyRepoError:
+        print('Not deleting {} because it is not empty. Use "force" or choose a different directory'
+              .format(api.config['DATA_LOCAL']))
+    except api.ConfigException as e:
+        print('There was a configuration error: {}'.format(e))
+
+
+@command
 def runserver(host="127.0.0.1", port="5000"):
     """Run a local development server"""
     try:
@@ -70,7 +83,7 @@ def clean():
 def test(cleanup=True):
     """Run the app's test suite. Cleans up after by default."""
     import unittest
-    suite = unittest.TestLoader().discover('.')  # get all the tests
+    suite = unittest.TestLoader().discover('test')  # get all the tests
     unittest.TextTestRunner(verbosity=2).run(suite)
     if cleanup:
         clean()

@@ -22,8 +22,9 @@ from werkzeug.wrappers import Request, Response
 from werkzeug.exceptions import (NotFound, InternalServerError, NotImplemented, HTTPException)
 from werkzeug.routing import Map, Rule
 from werkzeug.wsgi import DispatcherMiddleware
-from api.config import config  # config should come first so other moudles can import it
-from api.data import data_provider
+# The config imports should come before other package modules so other moudles can import it
+from api.config import config, ConfigException
+from api import data
 
 
 class ResourceApi(object):
@@ -37,7 +38,7 @@ class ResourceApi(object):
 
     def list_handler(self, request):
         if request.method == 'GET':
-            item_list = data_provider.get_list(self.resource)
+            item_list = data.data_provider.get_list(self.resource)
             if item_list is not None:
                 return self.render_json({self.resource: item_list})
             else:
@@ -47,7 +48,7 @@ class ResourceApi(object):
 
     def item_handler(self, request, uid):
         if request.method == 'GET':
-            item = data_provider.get_item(self.resource, uid)
+            item = data.data_provider.get_item(self.resource, uid)
             if item is not None:
                 return self.render_json(item)
             else:
