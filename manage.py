@@ -67,13 +67,33 @@ def clean():
 
 
 @command
-def test(cleanup=True):
+def test(skip_lint=False, cleanup=True):
     """Run the app's test suite. Cleans up after by default."""
     import unittest
     suite = unittest.TestLoader().discover('.')  # get all the tests
     unittest.TextTestRunner(verbosity=2).run(suite)
     if cleanup:
         clean()
+    if not skip_lint:
+        lint()
+
+
+@command
+def lint():
+    """Run pep8 linting to verify conformance with the style spec."""
+    import os
+    import pep8
+    style = pep8.StyleGuide(max_line_length=119)
+    py_files = []
+    for root, dirnames, filenames in os.walk('.'):
+        py_files += [os.path.join(root, f) for f in filenames if f.endswith('.py')]
+    print('Linting {} files...'.format(len(py_files)))
+    result = style.check_files(py_files)
+    if result.total_errors > 0:
+        print('{} linting errors'.format(result.total_errors))
+        sys.exit(1)
+    else:
+        print('OK')
 
 
 if __name__ == '__main__':
