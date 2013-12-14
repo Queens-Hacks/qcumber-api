@@ -22,7 +22,7 @@ from werkzeug.wrappers import Request, Response
 from werkzeug.exceptions import (NotFound, InternalServerError, NotImplemented, HTTPException)
 from werkzeug.routing import Map, Rule
 from werkzeug.wsgi import DispatcherMiddleware
-from api.config import config, ConfigException
+from api.config import config  # config should come first so other moudles can import it
 from api.data import data_provider
 
 

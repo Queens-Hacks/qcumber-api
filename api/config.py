@@ -26,17 +26,14 @@
     export CONFIG_VARIBLE="value for this variable"
     ```
 
-    Refer to `config_variables` below as a reference for which variables you
-    should set.
+    Refer to `variables` below as a reference for which variables you should set.
 """
 
 
-config = {}  # importable instance of the loaded configuration
 REQUIRED = object()  # used for identity checks `is REQUIRED`
-message = 'Couldn\'t get "{}", {}, from {}. :('
 
 
-config_variables = (
+variables = (
     # Variables are a three-tuple of the form (NAME, 'default' or REQUIRED, 'help text')
     ('DATA_REMOTE', 'https://github.com/Queens-Hacks/qcumber-data.git', 'the remote repository to read/write data'),
 )
@@ -46,24 +43,44 @@ class ConfigException(KeyError):
     """Raised for invalid configuration"""
 
 
-try:
-    # If there is a local config module, use it.
-    import local_config as _config_module
-    _source = 'module `api.local_config`'
-except ImportError:
-    import os
-    _config_module = None
-    _source = 'environment'
+class _GetitemProxy(object):
+    """Proxy __getitem__ access to module attributes"""
+
+    def __init__(self, module):
+        self.module = module
+
+    def __getitem__(self, name):
+        try:
+            return getattr(self.module, name)
+        except AttributeError as e:
+            raise KeyError(e)
 
 
-for name, req, help in config_variables:
+def get_source():
+    """Try to load config by importing local_config; fall back on environment variables."""
     try:
-        if _config_module is None:
-            config[name] = os.environ[name]
-        else:
-            config[name] = getattr(_config_module, name)
-    except (AttributeError, KeyError):
-        if req is REQUIRED:
-            raise ConfigException(message.format(name, help, _source))
-        else:
-            config[name] = None
+        import local_config as config_module
+        source = _GetitemProxy(config_module)
+    except ImportError:
+        import os
+        source = os.environ
+    return source
+
+
+def get_config(variables, source):
+    config = {}
+    for name, req, help in variables:
+        try:
+            config[name] = source[name]
+        except KeyError:
+            if req is REQUIRED:
+                raise ConfigException('Couldn\'t get "{}", {}. :('.format(name, help))
+            else:
+                config[name] = req
+    return config
+
+
+source = get_source()
+
+# Create an importable instance of the loaded configuration
+config = get_config(variables, source)

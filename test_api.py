@@ -15,12 +15,17 @@ from werkzeug.test import Client
 from werkzeug.wrappers import BaseResponse
 from werkzeug.exceptions import NotAcceptable, BadRequest
 
+from api.config import (
+    REQUIRED,
+    ConfigException,
+    _GetitemProxy,
+    get_config,
+)
 from api.middleware import (
     BeforeAfterMiddleware,
     DataTransformer,
     FieldLimiter,
 )
-
 
 test_data = {'message': 'hello world', 'errors': []}
 json_resp = lambda resp: json.loads(resp.get_data(as_text=True))
@@ -30,6 +35,39 @@ def dummy_json_app(environ, start_response):
     """Stupid app that sends a deep message: hello world"""
     response = BaseResponse(json.dumps(test_data), mimetype='application/json')
     return response(environ, start_response)
+
+
+class TestConfig(TestCase):
+
+    def test_module_proxy(self):
+        class FakeConfigModule(object):
+            """fake a config module with an object, since we only getattr on it"""
+            CONFIG_SETTING = 'hello'
+        module = FakeConfigModule()
+        proxy = _GetitemProxy(module)
+        var = proxy['CONFIG_SETTING']
+        self.assertEqual(var, 'hello')
+        with self.assertRaises(KeyError):
+            proxy['BAD_SETTING']
+
+    def test_get_config(self):
+        variables = (('CONFIG_SETTING', REQUIRED, ''),
+                     ('CONFIG_OPTIONAL', 'default', ''),)
+
+        source = dict(CONFIG_SETTING='hello')
+        config = get_config(variables, source)
+        self.assertEqual(config['CONFIG_SETTING'], 'hello')
+        self.assertEqual(config['CONFIG_OPTIONAL'], 'default')
+
+        source = dict(CONFIG_SETTING='hello', CONFIG_OPTIONAL='override')
+        config = get_config(variables, source)
+        self.assertEqual(config['CONFIG_SETTING'], 'hello')
+        self.assertEqual(config['CONFIG_OPTIONAL'], 'override')
+
+        with self.assertRaises(ConfigException):
+            variables = (('CONFIG_SETTING', REQUIRED, ''),)
+            source = dict()
+            config = get_config(variables, source)
 
 
 class TestMiddlewareBase(TestCase):
