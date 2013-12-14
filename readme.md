@@ -41,14 +41,13 @@ $ ln -s ../../pre-commit.sh .git/hooks/pre-commit
 
 ### 4. Local Configuration
 
-A couple variables need to be set. You can either create the file `api/local_config.py` and define the variables there, or export them to your environment. An example `local_config`:
+A couple variables can be set locally. You can either create the file `api/local_config.py` and define the variables there, or export them to your environment. An example `local_config`:
 
 ```python
-SECRET_KEY = '9wibR6AvTAGHx_-2lPn_AHWY6QEXfucKOMG9DUSQDung5mwp7kgvMa_R'
 DATA_REMOTE = https://github.com/Queens-Hacks/qcumber-data.git
 ```
 
-At the moment, only those to variables are required. However, in case this readme becomes out of date, the definitive list of config variables can be found [in the config module](api/config.py#L39) on line 39.
+At the moment, there are no required config variables. The definitive list of config variables can be found [in the config module](api/config.py#L39) on line 39.
 
 
 Usage

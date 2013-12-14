@@ -32,13 +32,13 @@
 
 
 config = {}  # importable instance of the loaded configuration
-REQUIRED, OPTIONAL = object(), object()  # used for identity checks `is REQUIRED`
+REQUIRED = object()  # used for identity checks `is REQUIRED`
 message = 'Couldn\'t get "{}", {}, from {}. :('
 
 
 config_variables = (
-    ('SECRET_KEY', REQUIRED, 'a long, hard-to-guess string'),
-    ('DATA_REMOTE', REQUIRED, 'the remote repository to read/write data'),
+    # Variables are a three-tuple of the form (NAME, 'default' or REQUIRED, 'help text')
+    ('DATA_REMOTE', 'https://github.com/Queens-Hacks/qcumber-data.git', 'the remote repository to read/write data'),
 )
 
 
@@ -49,25 +49,21 @@ class ConfigException(KeyError):
 try:
     # If there is a local config module, use it.
     import local_config as _config_module
+    _source = 'module `api.local_config`'
 except ImportError:
     import os
     _config_module = None
+    _source = 'environment'
 
 
 for name, req, help in config_variables:
-    if _config_module is not None:
-        try:
-            config[name] = getattr(_config_module, name)
-        except AttributeError:
-            if req is REQUIRED:
-                raise ConfigException(message.format(name, help, 'module `api.local_config`'))
-            else:
-                config[name] = None
-    else:
-        try:
+    try:
+        if _config_module is None:
             config[name] = os.environ[name]
-        except KeyError:
-            if req is REQUIRED:
-                raise ConfigException(message.format(name, help, 'environment'))
-            else:
-                config[name] = None
+        else:
+            config[name] = getattr(_config_module, name)
+    except (AttributeError, KeyError):
+        if req is REQUIRED:
+            raise ConfigException(message.format(name, help, _source))
+        else:
+            config[name] = None
