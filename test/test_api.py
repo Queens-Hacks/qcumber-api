@@ -82,8 +82,9 @@ class TestConfig(TestCase):
 class TestData(TestCase):
     local_repo = os.path.join(os.getcwd(), 'test', 'test_repo')
 
-    def setUpClass():
-        with tarfile.open(os.path.join(os.getcwd(), 'test', 'test_repo.tar')) as t:
+    @classmethod
+    def setUpClass(cls):
+        with tarfile.open('{}.tar'.format(cls.local_repo)) as t:
             t.extractall()
 
     def setUp(self):
@@ -94,8 +95,9 @@ class TestData(TestCase):
     def tearDown(self):
         shutil.rmtree(self.temp_dir)
 
-    def tearDownClass():
-        shutil.rmtree(os.path.join(os.getcwd(), 'test', 'test_repo'))
+    @classmethod
+    def tearDownClass(cls):
+        shutil.rmtree(cls.local_repo)
 
     def test_clone(self):
         clone()
