@@ -1,9 +1,21 @@
 """
     api.data
-    ~~~~~~~~~~~~~~
+    ~~~~~~~~
 
     Loads data and provides interface for it.
 """
+
+
+import os
+import subprocess
+from api import config, ConfigException
+
+
+# from subprocess import check_call, CalledProcessError
+
+
+class NotEmptyRepoError(IOError):
+    """Raised when an empty folder was expected, ie., for cloning."""
 
 
 class DataProvider(object):
@@ -42,3 +54,33 @@ class DataProvider(object):
         return None
 
 data_provider = DataProvider()
+
+
+def clone(force=False):
+    """Pull in a fresh copy of the data repo.
+
+    If `force` is true, then any files in the directory marked for use as the
+    repo will be deleted first.
+    """
+    repo_dir = config['DATA_LOCAL']
+    repo_uri = config['DATA_REMOTE']
+
+    # set up the directory for the repo
+    if not os.path.isdir(repo_dir):
+        try:
+            os.makedirs(repo_dir)
+        except FileExistsError:
+            raise ConfigException('The provided DATA_LOCAL directory, {}, is a file.'.format(repo_dir))
+        except PermissionError:
+            raise ConfigException('No write access for the provided DATA_LOCAL diretory ({}).'.format(repo_dir))
+
+    # make sure we're workin with a fresh directory
+    if len(os.listdir(repo_dir)) > 0:
+        if force:
+            import shutil
+            shutil.rmtree(repo_dir)
+        else:
+            raise NotEmptyRepoError()
+
+    # grab some data!
+    subprocess.check_call(['git', 'clone', repo_uri, repo_dir])
