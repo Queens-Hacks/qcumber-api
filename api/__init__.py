@@ -22,6 +22,7 @@ from werkzeug.wrappers import Request, Response
 from werkzeug.exceptions import (NotFound, InternalServerError, NotImplemented, HTTPException)
 from werkzeug.routing import Map, Rule
 from werkzeug.wsgi import DispatcherMiddleware
+from api import middleware
 from api.data import data_provider
 
 
@@ -90,3 +91,5 @@ app = DispatcherMiddleware(root_app, {
     '/subjects': subjects_app,
     '/instructors': instructors_app
 })
+
+app = middleware.FieldLimiter(root_app)

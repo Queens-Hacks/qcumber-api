@@ -34,11 +34,54 @@ def dummy_json_app(environ, start_response):
 
 class TestMiddlewareBase(TestCase):
 
+    def setUp(self):
+        def app(environ, start_response):
+            self.order.append('app_call')
+            response = BaseResponse(json.dumps(test_data))
+            return response(environ, start_response)
+        self.order = []
+        self.app = app
+
     def test_passthrough_mw(self):
         app = BeforeAfterMiddleware(dummy_json_app)
         c = Client(app, BaseResponse)
         response = c.get('/')
         self.assertEqual(json_resp(response), test_data)
+
+    def test_before_comes_first(self):
+        test_self = self
+
+        class BeforeMW(BeforeAfterMiddleware):
+            def before(self, request):
+                test_self.order.append('before')
+
+        wrapped = BeforeMW(self.app)
+        c = Client(wrapped, BaseResponse)
+        c.get('/')
+        self.assertEqual(self.order, ['before', 'app_call'])
+
+    def test_after_comes_last(self):
+        test_self = self
+
+        class AfterMW(BeforeAfterMiddleware):
+            def after(self, request, response):
+                test_self.order.append('after')
+        wrapped = AfterMW(self.app)
+        c = Client(wrapped, BaseResponse)
+        c.get('/')
+        self.assertEqual(self.order, ['app_call', 'after'])
+
+    def test_mw_is_immutable(self):
+        """Practic safe threading"""
+        class MW(BeforeAfterMiddleware):
+            def before(self):
+                self.some_property = 'aaaah'
+        wrapped = MW(dummy_json_app)
+        c = Client(wrapped, BaseResponse)
+        with self.assertRaises(TypeError):
+            c.get('/')
+        with self.assertRaises(TypeError):
+            del wrapped.some_property
 
 
 class TestDataTransformer(TestCase):
@@ -68,18 +111,18 @@ class TestFieldLimiter(TestCase):
         self.assertEqual(json_resp(resp), test_data)
 
     def test_limit_one(self):
-        resp = self.client.get('/?fields=message')
+        resp = self.client.get('/?field=message')
         self.assertEqual(json_resp(resp), {'message': test_data['message']})
 
     def test_limit_multi(self):
         fields = ('message', 'errors')
-        resp = self.client.get('/?fields={}&fields={}'.format(*fields))
+        resp = self.client.get('/?field={}&field={}'.format(*fields))
         expecting = {k: v for k, v in test_data.items() if k in fields}
         self.assertEqual(json_resp(resp), expecting)
 
     def test_limit_bad(self):
         with self.assertRaises(BadRequest):
-            resp = self.client.get('/?fields=nonexistentfield')
+            resp = self.client.get('/?field=nonexistentfield')
 
 
 if __name__ == '__main__':
