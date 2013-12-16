@@ -83,12 +83,15 @@ def lint():
     """Run pep8 linting to verify conformance with the style spec."""
     import os
     import pep8
+    import time
     style = pep8.StyleGuide(max_line_length=119)
     py_files = []
     for root, dirnames, filenames in os.walk('.'):
         py_files += [os.path.join(root, f) for f in filenames if f.endswith('.py')]
-    print('Linting {} files...'.format(len(py_files)))
+    t0 = time.time()
     result = style.check_files(py_files)
+    tf = time.time()
+    print('Linted {} files in {:.3g}s'.format(len(py_files), tf-t0))
     if result.total_errors > 0:
         print('{} linting errors'.format(result.total_errors))
         sys.exit(1)
