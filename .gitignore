@@ -15,3 +15,6 @@ venv/
 
 # Local configuration
 local_config.py
+
+# Default storage of data repo
+data/
