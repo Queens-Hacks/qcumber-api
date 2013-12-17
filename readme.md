@@ -30,10 +30,10 @@ You'll probably want to use a [virtualenv](http://www.virtualenv.org/en/latest/)
 (venv) $ pip install -r requirements.txt
 ```
 
-
 ### 3. Tests & Formatting
 
 You'll also need to set up a precommit hook for `pep8` to keep with the style spec:
+
 
 ```bash
 $ ln -s ../../pre-commit.sh .git/hooks/pre-commit
