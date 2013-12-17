@@ -198,3 +198,14 @@ class TestFieldLimiter(TestCase):
     def test_limit_bad(self):
         with self.assertRaises(BadRequest):
             resp = self.client.get('/?field=nonexistentfield')
+
+    def test_list_limit(self):
+        def app(environ, start_response):
+            """Stupid app that sends a deep message: hello world"""
+            response = BaseResponse(json.dumps([test_data] * 2),
+                                    mimetype='application/json')
+            return response(environ, start_response)
+        wrapped = FieldLimiter(app)
+        c = Client(wrapped, BaseResponse)
+        resp = c.get('/?field=message')
+        self.assertEqual(json_resp(resp), [{'message': test_data['message']}] * 2)

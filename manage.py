@@ -104,7 +104,7 @@ def lint():
     t0 = time.time()
     result = style.check_files(py_files)
     tf = time.time()
-    print('Linted {} files in {:.3g}s'.format(len(py_files), tf-t0))
+    print('Linted {} files in {:.3f}s'.format(len(py_files), tf-t0))
     if result.total_errors > 0:
         print('FAILED (errors={})'.format(result.total_errors))
         sys.exit(1)

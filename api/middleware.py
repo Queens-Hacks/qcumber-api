@@ -6,9 +6,9 @@
 """
 
 import json
-from werkzeug import abort
 from werkzeug.local import Local, release_local
 from werkzeug.wrappers import Request, Response
+from werkzeug.exceptions import BadRequest, NotAcceptable
 
 
 class BeforeAfterMiddleware(object):
@@ -64,7 +64,7 @@ class DataTransformer(BeforeAfterMiddleware):
     def before(self, request):
         self.local.target = request.accept_mimetypes.best_match(['application/json'])
         if self.local.target is None:
-            abort(406)
+            raise NotAcceptable()
 
     def after(self, request, response):
         body = response.get_data(as_text=True)
@@ -96,16 +96,24 @@ class FieldLimiter(BeforeAfterMiddleware):
         else:
             self.local.fields = request.args.getlist('field')
 
+    def limit(self, data):
+        # have they asked for fields that don't exist?
+        if not all(field in data for field in self.local.fields):
+            raise BadRequest()
+        limited = {k: v for k, v in data.items() if k in self.local.fields}
+        return limited
+
     def after(self, request, response):
         if getattr(self.local, 'skip', False):
             return
         body = response.get_data(as_text=True)
         data = json.loads(body)
-        # have they asked for fields that don't exist?
-        if not all(field in data for field in self.local.fields):
-            abort(400)
 
-        limited_data = {k: v for k, v in data.items() if k in self.local.fields}
+        if isinstance(data, list):
+            limited_data = [self.limit(d) for d in data]
+        else:
+            limited_data = self.limit(data)
+
         cereal = json.dumps(limited_data)
         response.set_data(cereal)
 

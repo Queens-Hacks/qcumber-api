@@ -70,7 +70,7 @@ class DataProvider(dict):
 
     @classmethod
     def load_all(cls):
-        rel_root = os.path.join('data', 'data', cls.fs_path)
+        rel_root = os.path.join(config['DATA_LOCAL'], 'data', cls.fs_path)
         fs_things = os.listdir(rel_root)
         loaded = {}
         for fs_thing in fs_things:
