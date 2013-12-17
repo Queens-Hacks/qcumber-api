@@ -57,7 +57,7 @@ class DataTransformer(BeforeAfterMiddleware):
     def after(self, request, response):
         body = response.get_data(as_text=True)
         if response.headers.get('Content-Type') != 'application/json':
-            warnings.warn('leaving non-JSON datak as a string')
+            warnings.warn('leaving non-JSON data as a string')
             data = body
         else:
             data = json.loads(body)
@@ -96,3 +96,14 @@ class FieldLimiter(BeforeAfterMiddleware):
         limited_data = {k: v for k, v in data.items() if k in self.fields}
         cereal = json.dumps(limited_data)
         response.set_data(cereal)
+
+
+class PrettyJSON(BeforeAfterMiddleware):
+    """Prettify JSON responses"""
+
+    def after(self, request, response):
+        if response.headers.get('Content-Type') == 'application/json':
+            body = response.get_data(as_text=True)
+            data = json.loads(body)
+            pretty_data = json.dumps(data, indent=2)
+            response.set_data(pretty_data)
