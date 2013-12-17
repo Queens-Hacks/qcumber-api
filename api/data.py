@@ -8,16 +8,11 @@
 import os
 import glob
 import json
-import subprocess
 import yaml
 from werkzeug.wrappers import Request, Response
 from werkzeug.exceptions import NotFound, HTTPException
 from werkzeug.routing import Map, Rule
-from api import config, ConfigException
-
-
-class NotEmptyRepoError(IOError):
-    """Raised when an empty folder was expected, ie., for cloning."""
+from api import config
 
 
 class Resource(object):
@@ -124,33 +119,3 @@ class Instructor(DataProvider):
     def get_id(self):
         norm_name = self['name'].lower().replace(' ', '-')
         return norm_name
-
-
-def clone(force=False):
-    """Pull in a fresh copy of the data repo.
-
-    If `force` is true, then any files in the directory marked for use as the
-    repo will be deleted first.
-    """
-    repo_dir = config['DATA_LOCAL']
-    repo_uri = config['DATA_REMOTE']
-
-    # set up the directory for the repo
-    if not os.path.isdir(repo_dir):
-        try:
-            os.makedirs(repo_dir)
-        except FileExistsError:
-            raise ConfigException('The provided DATA_LOCAL directory, {}, is a file.'.format(repo_dir))
-        except PermissionError:
-            raise ConfigException('No write access for the provided DATA_LOCAL diretory ({}).'.format(repo_dir))
-
-    # make sure we're workin with a fresh directory
-    if len(os.listdir(repo_dir)) > 0:
-        if force:
-            import shutil
-            shutil.rmtree(repo_dir)
-        else:
-            raise NotEmptyRepoError()
-
-    # grab some data!
-    subprocess.check_call(['git', 'clone', repo_uri, repo_dir])

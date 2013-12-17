@@ -26,7 +26,7 @@ from api.config import (
     _GetitemProxy,
     get_config,
 )
-from api.data import (
+from api.repo import (
     NotEmptyRepoError,
     clone,
 )
