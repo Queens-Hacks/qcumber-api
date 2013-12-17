@@ -26,7 +26,15 @@ class Resource(object):
             Rule('/', methods=['GET'], endpoint=self.list_handler),
             Rule('/<uid>/', methods=['GET'], endpoint=self.item_handler)
         ])
-        self.data_map = provider_class.load_all()
+        self.provider_class = provider_class
+
+    @property
+    def data_map(self):
+        try:
+            data_map = self._data_map
+        except AttributeError:
+            self._data_map = data_map = self.provider_class.load_all()
+        return data_map
 
     def list_handler(self, request):
         data_list = list(self.data_map.values())

@@ -33,7 +33,7 @@ def help():
     print('Available commands:')
     for name, func in command.__defaults__[0].items():  # _funcs={}
         print(' * {:16s} {}'.format(name, func.__doc__ or ''))
-    sys.exit(1)
+    raise SystemExit(1)
 
 
 @command
@@ -41,8 +41,8 @@ def init(force=False):
     """Set the api up: clone the data repo, etc."""
     import api
     try:
-        api.data.clone(force)
-    except api.data.NotEmptyRepoError:
+        api.repo.clone(force)
+    except api.repo.NotEmptyRepoError:
         print('Not deleting {} because it is not empty. Use "force" or choose a different directory'
               .format(api.config['DATA_LOCAL']))
     except api.ConfigException as e:
@@ -56,14 +56,14 @@ def runserver(host="127.0.0.1", port="5000"):
         port_num = int(port)
     except ValueError:
         print('The port number must be in integer (got "{}")'.format(port))
-        sys.exit(1)
+        raise SystemExit(1)
     try:
         from werkzeug.serving import run_simple
     except ImportError:
         print('The werkzeug development server could not be imported :(\n'
               'Have you installed requirements ($ pip install -r requirements'
               '.txt) or perhaps forgotten to activate a virtualenv?')
-        sys.exit(1)
+        raise SystemExit(1)
     from api import app as app
     run_simple(host, port_num, app, use_debugger=True, use_reloader=True)
 
@@ -84,7 +84,9 @@ def test(skip_lint=False, cleanup=True):
     """Run the app's test suite. Cleans up after by default."""
     import unittest
     suite = unittest.TestLoader().discover('test')  # get all the tests
-    unittest.TextTestRunner(verbosity=2).run(suite)
+    result = unittest.TextTestRunner(verbosity=2).run(suite)
+    if not result.wasSuccessful():
+        raise SystemExit(1)
     if cleanup:
         clean()
     if not skip_lint:
@@ -107,7 +109,7 @@ def lint():
     print('Linted {} files in {:.3f}s'.format(len(py_files), tf-t0))
     if result.total_errors > 0:
         print('FAILED (errors={})'.format(result.total_errors))
-        sys.exit(1)
+        raise SystemExit(1)
     else:
         print('OK')
 

@@ -26,6 +26,7 @@ from werkzeug.wsgi import DispatcherMiddleware
 from api.config import config, ConfigException
 from api import middleware
 from api import data
+from api import repo
 
 
 dispatch_appmap = {
