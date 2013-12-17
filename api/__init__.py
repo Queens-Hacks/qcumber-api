@@ -21,6 +21,7 @@
 import json
 from werkzeug.wrappers import Response
 from werkzeug.wsgi import DispatcherMiddleware
+from api.config import config  # config should come first so other moudles can import it
 from api import middleware
 from api import data
 
