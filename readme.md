@@ -17,9 +17,11 @@ Install
 -------
 
 
-### 1. Python
+### 1. Python & Git
 
-qcumber-api requires python version 2.7 or 3.3. To get set up, just grab the dependancies:
+Python 2.7 or 3.3 and git must be installed on your system to run qcumber-api.
+
+To get set up, just grab the dependancies:
 
 
 ### 2. Application Requirements
@@ -47,7 +49,16 @@ A couple variables can be set locally. You can either create the file `api/local
 DATA_REMOTE = https://github.com/Queens-Hacks/qcumber-data.git
 ```
 
-At the moment, there are no required config variables. The definitive list of config variables can be found [in the config module](api/config.py#L39) on line 39.
+At the moment, there are no required config variables. The definitive list of config variables can be found [in the config module](api/config.py#L36) on line 36.
+
+
+### 5. Get Data
+
+Run `init` to grab data from the repo. The exact repo to pull from is set by your config, and it defaults to https://github.com/Queens-Hacks/qcumber-data.git.
+
+```bash
+(venv) $ ./manage.py init
+```
 
 
 Usage
