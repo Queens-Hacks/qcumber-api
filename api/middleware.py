@@ -43,10 +43,13 @@ class BeforeAfterMiddleware(object):
         # finally, blah
         return response(environ, start_response)
 
-    def __setattr__(self, name, value):
-        raise TypeError('Mutating a BeforeAfterMiddleware is (usually) not thread-safe. Use the local attribute.')
+    def mutate_error(self, *args, **kwargs):
+        raise TypeError('Mutating a BeforeAfterMiddleware is (usually) not thread-safe. '
+                        'Use the thread-safe `self.local` property.')
 
-    __delattr__ = __setattr__
+    __setattr__ = mutate_error
+
+    __delattr__ = mutate_error
 
 
 class DataTransformer(BeforeAfterMiddleware):

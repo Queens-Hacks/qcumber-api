@@ -37,14 +37,13 @@ def help():
 
 
 @command
-def init(force=False):
+def init():
     """Set the api up: clone the data repo, etc."""
     import api
     try:
-        api.repo.clone(force)
+        api.repo.clone()
     except api.repo.NotEmptyRepoError:
-        print('Not deleting {} because it is not empty. Use "force" or choose a different directory'
-              .format(api.config['DATA_LOCAL']))
+        print('Not cloning into {} because it is not empty.'.format(api.config['DATA_LOCAL']))
     except api.ConfigException as e:
         print('There was a configuration error: {}'.format(e))
 

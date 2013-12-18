@@ -5,12 +5,12 @@
     Installation-specific configuration.
 
 
-    This module will load configuration from a local_config module in this
+    This module will load configuration from a local_config module in the project
     directory if one exists, falling back on environment variables otherwise.
 
     A local_config module should look like this:
 
-    `api/local_config.py`
+    `local_config.py`
     ```python
     CONFIG_VARIABLE = "value for this variable"
     ```

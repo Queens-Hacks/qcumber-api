@@ -14,12 +14,8 @@ class NotEmptyRepoError(IOError):
     """Raised when an empty folder was expected, ie., for cloning."""
 
 
-def clone(force=False):
-    """Pull in a fresh copy of the data repo.
-
-    If `force` is true, then any files in the directory marked for use as the
-    repo will be deleted first.
-    """
+def clone():
+    """Pull in a fresh copy of the data repo."""
     repo_dir = config['DATA_LOCAL']
     repo_uri = config['DATA_REMOTE']
 
@@ -34,11 +30,7 @@ def clone(force=False):
 
     # make sure we're workin with a fresh directory
     if len(os.listdir(repo_dir)) > 0:
-        if force:
-            import shutil
-            shutil.rmtree(repo_dir)
-        else:
-            raise NotEmptyRepoError()
+        raise NotEmptyRepoError()
 
     # grab some data!
     subprocess.check_call(['git', 'clone', repo_uri, repo_dir])

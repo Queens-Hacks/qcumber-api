@@ -104,7 +104,6 @@ class TestData(TestCase):
         self.assertTrue(os.path.isdir(os.path.join(self.temp_dir, '.git')))
         with self.assertRaises(NotEmptyRepoError):
             clone()
-        clone(force=True)
 
 
 class TestMiddlewareBase(TestCase):
