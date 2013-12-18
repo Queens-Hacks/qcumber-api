@@ -12,3 +12,12 @@ nosetests.xml
 
 # Conventional virtualenv dir for people who haven't yet realized how great virtualenvwrapper is
 venv/
+
+# Local configuration
+local_config.py
+
+# Default storage of data repo
+data/
+
+# Vim swp files
+.*.swp
