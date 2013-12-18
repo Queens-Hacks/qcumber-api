@@ -103,7 +103,7 @@ class FieldLimiter(BeforeAfterMiddleware):
         if 'field' not in request.args:
             return
 
-        fields = map(lambda s: s.lower(), request.args.getlist('field'))
+        fields = [s.lower() for s in request.args.getlist('field')]
 
         body = response.get_data(as_text=True)
         data = json.loads(body)
