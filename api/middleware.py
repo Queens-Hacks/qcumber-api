@@ -89,30 +89,26 @@ class FieldLimiter(BeforeAfterMiddleware):
     The limits only work for top-level keys in structured response bodies.
     """
 
-    def before(self, request):
-        if 'field' not in request.args:
-            # don't need to limit any fields
-            self.local.skip = True
-        else:
-            self.local.fields = request.args.getlist('field')
-
-    def limit(self, data):
+    def limit(self, data, fields):
         # have they asked for fields that don't exist?
-        if not all(field in data for field in self.local.fields):
+        if not all(field in data for field in fields):
             raise BadRequest()
-        limited = {k: v for k, v in data.items() if k in self.local.fields}
+        limited = {key: data[key] for key in fields}
         return limited
 
     def after(self, request, response):
-        if getattr(self.local, 'skip', False):
+        if 'field' not in request.args:
             return
+
+        fields = map(lambda s: s.lower(), request.args.getlist('field'))
+
         body = response.get_data(as_text=True)
         data = json.loads(body)
 
         if isinstance(data, list):
-            limited_data = [self.limit(d) for d in data]
+            limited_data = [self.limit(d, fields) for d in data]
         else:
-            limited_data = self.limit(data)
+            limited_data = self.limit(data, fields)
 
         cereal = json.dumps(limited_data)
         response.set_data(cereal)

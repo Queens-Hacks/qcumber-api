@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 """
     api
     ~~~
@@ -30,9 +29,9 @@ from api import repo
 
 
 dispatch_appmap = {
-    '/courses': data.Resource(url_root='/courses', provider_class=data.Course),
-    '/subjects': data.Resource(url_root='/courses', provider_class=data.Subject),
-    '/instructors': data.Resource(url_root='/courses', provider_class=data.Instructor),
+    '/courses': data.Resource(provider_class=data.Course),
+    '/subjects': data.Resource(provider_class=data.Subject),
+    '/instructors': data.Resource(provider_class=data.Instructor),
 }
 
 

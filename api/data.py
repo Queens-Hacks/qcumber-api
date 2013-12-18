@@ -21,7 +21,7 @@ class Resource(object):
     Instances of this class are WSGI apps, routed to by a base URL. They are
     responsible for mapping HTTP requests to DataProviders.
     """
-    def __init__(self, url_root, provider_class):
+    def __init__(self, provider_class):
         self.url_map = Map([
             Rule('/', methods=['GET'], endpoint=self.list_handler),
             Rule('/<uid>/', methods=['GET'], endpoint=self.item_handler)
