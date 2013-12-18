@@ -8,6 +8,7 @@
 import os
 import glob
 import json
+from collections import defaultdict
 import yaml
 from werkzeug.wrappers import Request, Response
 from werkzeug.exceptions import NotFound, HTTPException
@@ -31,13 +32,42 @@ class Resource(object):
     @property
     def data_map(self):
         try:
-            data_map = self._data_map
+            return self._data_map
         except AttributeError:
-            self._data_map = data_map = self.provider_class.load_all()
-        return data_map
+            self._build_maps()
+        return self._data_map
+
+    @property
+    def keysets(self):
+        try:
+            return self._keysets
+        except AttributeError:
+            self._build_maps()
+        return self._keysets
+
+    def _build_maps(self):
+        self._data_map = self.provider_class.load_all()
+        self._keysets = defaultdict(lambda: defaultdict(set))  # dict(dict(set()))
+        for _id, data in self._data_map.items():
+            for key, value in data.items():
+                try:
+                    self._keysets[key][value].add(_id)
+                except TypeError:
+                    pass  # unhashable value or something...
 
     def list_handler(self, request):
-        data_list = list(self.data_map.values())
+        filter_keys = [key for key in request.args if key in self.keysets]
+        if filter_keys:
+            filtered = set(self.data_map)  # start with everything
+            for key in filter_keys:
+                filters = request.args.getlist(key)
+                subset = set()
+                for filter_val in filters:
+                    subset.update(self.keysets[key][filter_val])
+                filtered.intersection_update(subset)
+            data_list = list(self.data_map[key] for key in filtered)
+        else:
+            data_list = list(self.data_map.values())
         return self.render_json(data_list)
 
     def item_handler(self, request, uid):
