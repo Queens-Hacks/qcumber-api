@@ -18,3 +18,6 @@ local_config.py
 
 # Default storage of data repo
 data/
+
+# Vim swp files
+.*.swp
