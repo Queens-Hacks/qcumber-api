@@ -53,7 +53,7 @@ class BeforeAfterMiddleware(object):
 
 
 class DataTransformer(BeforeAfterMiddleware):
-    """Flexible accept, nice and normalized for inernal use.
+    """Flexible accept, nice and normalized for internal use.
 
     Requests:
      * Form-encoded POST requests are transformed to flat key/value json.
