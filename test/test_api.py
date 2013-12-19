@@ -16,7 +16,7 @@ import tempfile
 from unittest import TestCase
 from werkzeug.test import Client
 from werkzeug.wrappers import BaseResponse
-from werkzeug.exceptions import NotAcceptable, BadRequest
+from werkzeug.exceptions import NotAcceptable, BadRequest, NotFound
 
 import api
 from api.config import (
@@ -208,3 +208,18 @@ class TestFieldLimiter(TestCase):
         c = Client(wrapped, BaseResponse)
         resp = c.get('/?field=message')
         self.assertEqual(json_resp(resp), [{'message': test_data['message']}] * 2)
+
+
+class TestRootApp(TestCase):
+
+    def setUp(self):
+        self.app = api.RootApp()
+        self.client = Client(self.app, BaseResponse)
+
+    def test_status_ok(self):
+        response = self.client.get('/', headers=[('Accept', 'application/json')])
+        self.assertEqual(response.status_code, 200)
+
+    def test_status_not_found(self):
+        response = self.client.get('/notaresource')
+        self.assertEqual(response.status_code, 404)
