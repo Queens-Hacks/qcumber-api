@@ -42,5 +42,6 @@ def root_app(environ, start_response):
 
 app = DispatcherMiddleware(root_app, dispatch_appmap)
 app = middleware.FieldLimiter(app)
+app = middleware.JsonifyHttpException(app)
 #app = middleware.DataTransformer(app)
 app = middleware.PrettyJSON(app)
