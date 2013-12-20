@@ -8,7 +8,7 @@
 import json
 from werkzeug.local import Local, release_local
 from werkzeug.wrappers import Request, Response
-from werkzeug.exceptions import BadRequest, NotAcceptable
+from werkzeug.exceptions import BadRequest, NotAcceptable, HTTPException, abort
 
 
 class BeforeAfterMiddleware(object):
@@ -126,3 +126,48 @@ class PrettyJSON(BeforeAfterMiddleware):
             data = json.loads(body)
             pretty_data = json.dumps(data, indent=2)
             response.set_data(pretty_data)
+
+
+class JsonifyHttpException(object):
+    """Format http errors as json, but keep the error status in the response
+
+    Should wrap the highest level possible so that any errors thrown in nested
+    wrapped apps will be caught.
+    """
+
+    def __init__(self, app, error_prefixes=[4, 5]):
+        # Keep a reference to the wsgi app we're wrapping
+        self.app = app
+        self.local = Local()
+        self.error_prefixes = error_prefixes
+
+    def error_data(self, http_err):
+        """Creates a dict with status and message for returning an http error"""
+        data = {
+            'status code': http_err.code,
+            'error name': http_err.name,
+            'description': http_err.description
+        }
+        return data
+
+    def __call__(self, environ, start_response):
+        """Process a request"""
+        try:
+            # Set up the request
+            request = Request(environ)
+
+            # Defer  to the wrapped app, then do our cleanup
+            response = Response.from_app(self.app, environ)
+
+            if response.status_code/100 in self.error_prefixes:
+                abort(response.status_code)
+
+            release_local(self.local)
+
+            return response(environ, start_response)
+
+        except HTTPException as err:
+            response = err.get_response(environ)
+            response.data = json.dumps(self.error_data(err))
+            response.headers['content-type'] = 'application/json'
+            return response(environ, start_response)
