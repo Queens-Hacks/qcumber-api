@@ -213,7 +213,7 @@ class TestFieldLimiter(TestCase):
 class TestRootApp(TestCase):
 
     def setUp(self):
-        self.app = api.RootApp()
+        self.app = api.root_app
         self.client = Client(self.app, BaseResponse)
 
     def test_status_ok(self):
@@ -221,5 +221,5 @@ class TestRootApp(TestCase):
         self.assertEqual(response.status_code, 200)
 
     def test_status_not_found(self):
-        response = self.client.get('/notaresource')
-        self.assertEqual(response.status_code, 404)
+        with self.assertRaises(NotFound):
+            response = self.client.get('/notaresource')

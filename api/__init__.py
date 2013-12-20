@@ -18,7 +18,7 @@
 """
 
 import json
-from werkzeug.exceptions import HTTPException
+from werkzeug.exceptions import HTTPException, NotFound
 from werkzeug.routing import Map, Rule
 from werkzeug.wrappers import Request, Response
 from werkzeug.wsgi import DispatcherMiddleware
@@ -36,38 +36,16 @@ dispatch_appmap = {
 }
 
 
-class RootApp(object):
-    """Root app for the api"""
-    def __init__(self):
-        self.url_map = Map([Rule('/', endpoint=self.root_handler)])
+def root_app(environ, start_response):
+    path = environ.get('PATH_INFO') or '/'
+    if path == '/':
+        resources = {"resources": list(dispatch_appmap.keys())}
+        response = Response(json.dumps(resources), mimetype='application/json')
+    else:
+        raise NotFound
+    return response(environ, start_response)
 
-    def root_handler(self, request):
-        if request.method == 'GET':
-            resources = {"resources": list(dispatch_appmap.keys())}
-            return self.render_json(resources)
-        else:
-            raise NotImplemented()
-
-    def render_json(self, data):
-        return Response(json.dumps(data), mimetype='application/json')
-
-    def dispatch_request(self, request):
-        adapter = self.url_map.bind_to_environ(request.environ)
-        try:
-            endpoint, values = adapter.match()
-            return (endpoint)(request, **values)
-        except HTTPException as e:
-            return e
-
-    def wsgi_app(self, environ, start_response):
-        request = Request(environ)
-        response = self.dispatch_request(request)
-        return response(environ, start_response)
-
-    def __call__(self, environ, start_response):
-        return self.wsgi_app(environ, start_response)
-
-app = RootApp()
+app = root_app
 app = DispatcherMiddleware(app, dispatch_appmap)
 app = middleware.FieldLimiter(app)
 #app = middleware.DataTransformer(app)
