@@ -21,7 +21,7 @@ import json
 from functools import wraps
 from collections import defaultdict
 from werkzeug.routing import Map, Rule
-from werkzeug.wrappers import Response
+from werkzeug.wrappers import Request, Response
 from werkzeug.wsgi import DispatcherMiddleware
 
 # The config imports should come before other package modules so other moudles can import it
@@ -62,10 +62,11 @@ def route_resource(url_root, provider, endpoint):
 def api_app(environ, start_response):
     adapter = url_map.bind_to_environ(environ)
     handler, values = adapter.match()
+    request = Request(environ)
     if '.' in handler:
         provider_name, method = handler.split('.', 1)
         provider = endpoint_map[provider_name]
-        provided_data = getattr(provider, method)(**values)
+        provided_data = getattr(provider, method)(request, **values)
     else:
         provider = endpoint_map[handler]
         provided_data = provider(**values)
@@ -90,15 +91,15 @@ urls = url_map.bind('localhost')
 
 
 def get_app():
-    data.course.load_all()
-    data.subject.load_all()
-    data.instructor.load_all()
+    data.course.init()
+    data.subject.init()
+    data.instructor.init()
 
     # for rule in endpoint_map
 
     app = api_app
     app = middleware.FieldLimiter(app)
-    #app = middleware.DataTransformer(app)
+    app = middleware.DataTransformer(app)
     app = middleware.PrettyJSON(app)
 
     return app
