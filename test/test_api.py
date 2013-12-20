@@ -16,7 +16,7 @@ import tempfile
 from unittest import TestCase
 from werkzeug.test import Client
 from werkzeug.wrappers import BaseResponse
-from werkzeug.exceptions import NotAcceptable, BadRequest
+from werkzeug.exceptions import NotAcceptable, BadRequest, NotFound
 
 import api
 from api.config import (
@@ -34,6 +34,7 @@ from api.middleware import (
     BeforeAfterMiddleware,
     DataTransformer,
     FieldLimiter,
+    JsonifyHttpException,
 )
 
 test_data = {'message': 'hello world', 'errors': []}
@@ -44,6 +45,14 @@ def dummy_json_app(environ, start_response):
     """Stupid app that sends a deep message: hello world"""
     response = BaseResponse(json.dumps(test_data), mimetype='application/json')
     return response(environ, start_response)
+
+
+def not_found_app(environ, start_response):
+    raise NotFound
+
+
+def bad_request_app(environ, start_response):
+    raise BadRequest
 
 
 class TestConfig(TestCase):
@@ -208,3 +217,20 @@ class TestFieldLimiter(TestCase):
         c = Client(wrapped, BaseResponse)
         resp = c.get('/?field=message')
         self.assertEqual(json_resp(resp), [{'message': test_data['message']}] * 2)
+
+
+class TestJsonifyHttpException(TestCase):
+
+    def test_404_as_json(self):
+        app = JsonifyHttpException(not_found_app)
+        client = Client(app, BaseResponse)
+
+        response = client.get('/nothingtofind')
+        self.assertEqual(response.headers['Content-Type'], 'application/json')
+
+    def test_bad_request_as_json(self):
+        app = JsonifyHttpException(bad_request_app)
+        client = Client(app, BaseResponse)
+
+        response = client.get('/alwaysbad')
+        self.assertEqual(response.headers['Content-Type'], 'application/json')

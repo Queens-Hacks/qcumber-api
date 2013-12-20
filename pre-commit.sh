@@ -1,8 +1,12 @@
 #!/bin/bash
 
+# unit tests fail with a zero exit status but say 'FAILED'
+# other things in the manage.py test may fail, so have to also test for non-zero exit
 ./manage.py test 2>&1 | grep "FAILED" > /dev/null
-status=$?
-if [ $status = 0 ]; then
+
+status=( ${PIPESTATUS[@]} )
+
+if  [ ${status[0]} -ne 0 ] || [ ${status[1]} -ne 1 ] ; then
     echo "unit tests failed, aborting commit"
     exit 1
 fi
