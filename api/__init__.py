@@ -95,11 +95,9 @@ def get_app():
     data.subject.init()
     data.instructor.init()
 
-    # for rule in endpoint_map
-
     app = api_app
     app = middleware.FieldLimiter(app)
+    app = middleware.JsonifyHttpException(app)
     app = middleware.DataTransformer(app)
-    app = middleware.PrettyJSON(app)
 
     return app

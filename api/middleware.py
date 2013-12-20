@@ -78,7 +78,7 @@ class DataTransformer(BeforeAfterMiddleware):
             data = json.loads(body)
 
         if self.local.target == 'application/json':
-            cereal = json.dumps(data)
+            cereal = json.dumps(data, indent=2)
             response.set_data(cereal)
 
 
@@ -115,17 +115,6 @@ class FieldLimiter(BeforeAfterMiddleware):
 
         cereal = json.dumps(limited_data)
         response.set_data(cereal)
-
-
-class PrettyJSON(BeforeAfterMiddleware):
-    """Prettify JSON responses"""
-
-    def after(self, request, response):
-        if response.headers.get('Content-Type') == 'application/json':
-            body = response.get_data(as_text=True)
-            data = json.loads(body)
-            pretty_data = json.dumps(data, indent=2)
-            response.set_data(pretty_data)
 
 
 class JsonifyHttpException(object):
