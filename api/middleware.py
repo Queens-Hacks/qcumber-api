@@ -141,14 +141,19 @@ class JsonifyHttpException(object):
         self.local = Local()
         self.error_prefixes = error_prefixes
 
-    def error_data(self, http_err):
-        """Creates a dict with status and message for returning an http error"""
+    def jsonify_error(self, http_err, environ):
+        """Creates a error response with body as json"""
         data = {
             'status code': http_err.code,
             'error name': http_err.name,
             'description': http_err.description
         }
-        return data
+
+        response = http_err.get_response(environ)
+        response.data = json.dumps(data)
+        response.headers['content-type'] = 'application/json'
+
+        return response
 
     def __call__(self, environ, start_response):
         """Process a request"""
@@ -167,7 +172,5 @@ class JsonifyHttpException(object):
             return response(environ, start_response)
 
         except HTTPException as err:
-            response = err.get_response(environ)
-            response.data = json.dumps(self.error_data(err))
-            response.headers['content-type'] = 'application/json'
+            response = self.jsonify_error(err, environ)
             return response(environ, start_response)
