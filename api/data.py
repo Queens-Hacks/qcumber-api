@@ -14,27 +14,33 @@ import yaml
 from werkzeug.wrappers import Request, Response
 from werkzeug.exceptions import NotFound, HTTPException
 from werkzeug.routing import Map, Rule
-from api import config
 import api
 
 
 class RefEncoder(json.JSONEncoder):
+    """Encode json with embedded DataRef instances."""
     def default(self, obj):
         if isinstance(obj, DataRef):
             return obj.get_link()
         return json.JSONEncoder.default(self, obj)
 
+# custom json serializer that knows how to encode RefEncoders
 dumps = partial(json.dumps, cls=RefEncoder)
 
 
 class DataRef(object):
-    """deferred references"""
+    """Create a reference to some data from other data.
+
+    This class keeps track of the reference so that it can be looked up later,
+    after all the data has been loaded.
+    """
 
     def __init__(self, data_ref):
         self.ref = data_ref
         self.ref_dir, self.ref_data_id = self.ref.split('/', 1)
 
     def get_link(self):
+        """Returns an api uri for the resource"""
         data = Resource.data_ref_map[self.ref]
         provider = Resource.data_provider_map[self.ref_dir]
         api_id = provider.get_api_id(provider, data)
@@ -42,13 +48,14 @@ class DataRef(object):
         return link
 
     def get(self):
+        """Returns the actual referenced resource"""
         data = Resource.data_ref_map[self.ref]
         return data
 
 
 class Resource(object):
-    """ """
-    data_path = os.path.join(config['DATA_LOCAL'], 'data')
+    """"""
+    data_path = os.path.join(api.config['DATA_LOCAL'], 'data')
     data_provider_map = {}  # maps provider names to providers
     data_ref_map = {}  # map filesystem references to data
     routed_methods = (('index', 'GET', '/'),
@@ -56,6 +63,12 @@ class Resource(object):
 
     @classmethod
     def init(cls):
+        """Sets up all the instances of this class.
+
+        Resources have three stages of initalization, and all resources should
+        complete each stage before moving on to the next one to avoid reference
+        dependency issues.
+        """
         for provider in cls.data_provider_map.values():
             provider.load_data()
         for provider in cls.data_provider_map.values():
@@ -72,18 +85,26 @@ class Resource(object):
         self.get_api_id = None
 
     def loader(self, func):
+        """Decorate a function to be used as a data loader for this resource"""
         self.load = func
 
     def api_id_getter(self, func):
+        """Decorate a function to compute the api id for this resource"""
         self.get_api_id = func
 
     def filename_to_ref(self, filename):
+        """Normalize filesystem listings which may be files or directories"""
         if filename.endswith('.yml'):
             filename = filename[:-len('.yml')]
         ref = os.path.join(self.data_dir, filename)
         return ref
 
     def load_data(self):
+        """Load all the data for this resource into memory.
+
+        The individual pieces of data are referenced in a mapping from their
+        data reference.
+        """
         data_path = os.path.join(self.data_path, self.data_dir)
         data_refs = map(self.filename_to_ref, os.listdir(data_path))
         for data_ref in data_refs:
@@ -92,12 +113,42 @@ class Resource(object):
             self.data_ref_map[data_ref] = data
 
     def map_api_ids(self):
+        """Populate a mapping from api ids to data instances for this resource.
+
+        This method should be called after `load_data` has been called on all
+        the Resource instances, so that any Resource wishing to dereference
+        another piece of data in order to build its api id can be sure it has
+        been loaded.
+        """
         resource_data = (self.data_ref_map[k] for k in self.data_ref_map if k.startswith(self.data_dir))
         for data in resource_data:
             api_id = self.get_api_id(self, data)
             self.api_id_map[api_id] = data
 
     def build_maps(self):
+        """Generate maps of maps to sets of api_ids for query limiting.
+
+        For every top-level key with a hashable value in a resource's set of
+        data, a mapping is created for every value for that key to the set of
+        data that have that value.
+
+        so like, for this data
+
+        data:
+            stuff/1: {fruit: apple, colour: red}
+            stuff/2: {fruit: apple, colour: green}
+
+        you get a mapping like this
+
+        fruit:
+            apple: set(stuff/1, stuff/2)
+        colour:
+            red: set(stuff/1)
+            green: set(stuff/2)
+
+        The mapping is built for every top-level key in the data that has a
+        hashable value.
+        """
         for api_id, data in self.api_id_map.items():
             for key, value in data.items():
                 try:
@@ -106,6 +157,12 @@ class Resource(object):
                     pass  # unhashable value or something...
 
     def index(self, request):
+        """List the data for this resource
+
+        The request's query string can be used to limit the result. For example,
+        the query string `?colour=red` will limit the list to those items who
+        have a top-level key called `colour` with a value `red`.
+        """
         filter_keys = [key for key in request.args if key in self.keysets]
         if filter_keys:
             filtered = set(self.api_id_map)  # start with everything
@@ -121,6 +178,7 @@ class Resource(object):
         return data_list
 
     def item(self, request, api_id):
+        """Retrieve a sinle piece of data by its id"""
         try:
             return self.api_id_map[api_id]
         except KeyError:

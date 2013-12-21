@@ -38,6 +38,10 @@ urls = url_map.bind('localhost')
 
 
 def route(path, methods=None):
+    """Register a function to be called for an endpoint.
+
+    The function's return data will be jsonified and used as the response.
+    """
     methods = methods or ['GET']
 
     def endpoint_wrapper(func):
@@ -52,6 +56,7 @@ def route(path, methods=None):
 
 
 def route_resource(url_root, provider, endpoint):
+    """Register a resource to be served over the API"""
     endpoint_provider_map[endpoint] = provider
     for resource_method, http_method, sub_url in provider.routed_methods:
         url = url_root + sub_url
@@ -62,6 +67,7 @@ def route_resource(url_root, provider, endpoint):
 
 
 def api_app(environ, start_response):
+    """WSGI application mapping requests to endpoints"""
     adapter = url_map.bind_to_environ(environ)
     handler, values = adapter.match()
     request = Request(environ)
@@ -78,6 +84,7 @@ def api_app(environ, start_response):
 
 @route('/')
 def root():
+    """Provide links to all available resources"""
     url_methods = defaultdict(set)
     for resource in url_map.iter_rules():
         url_methods[str(resource)].update(resource.methods)
@@ -85,12 +92,15 @@ def root():
     return resources
 
 
+# register the resources set up in data
 route_resource('/courses', provider=data.course, endpoint='courses')
 route_resource('/subjects', provider=data.subject, endpoint='subjects')
 route_resource('/instructors', provider=data.instructor, endpoint='instructors')
 
 
 def get_app():
+    """Returns an initialized and middleware-wrapped wsgi application, ready to go"""
+
     data.Resource.init()
 
     app = api_app
