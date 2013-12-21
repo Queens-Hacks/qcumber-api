@@ -32,7 +32,9 @@ from api import repo
 
 
 url_map = Map()
-endpoint_map = {}
+endpoint_provider_map = {}
+
+urls = url_map.bind('localhost')
 
 
 def route(path, methods=None):
@@ -42,7 +44,7 @@ def route(path, methods=None):
         @wraps(func)
         def endpoint_func(*args, **kwargs):
             return func(*args, **kwargs)
-        endpoint_map[func.__name__] = endpoint_func
+        endpoint_provider_map[func.__name__] = endpoint_func
         rule = Rule(path, methods=methods, endpoint=func.__name__)
         url_map.add(rule)
         return endpoint_func
@@ -50,8 +52,8 @@ def route(path, methods=None):
 
 
 def route_resource(url_root, provider, endpoint):
-    endpoint_map[endpoint] = provider
-    for http_method, sub_url, resource_method in provider.routed_methods:
+    endpoint_provider_map[endpoint] = provider
+    for resource_method, http_method, sub_url in provider.routed_methods:
         url = url_root + sub_url
         methods = [http_method]
         endpoint_str = '.'.join((endpoint, resource_method))
@@ -63,12 +65,12 @@ def api_app(environ, start_response):
     adapter = url_map.bind_to_environ(environ)
     handler, values = adapter.match()
     request = Request(environ)
-    if '.' in handler:
+    if '.' in handler:  # must be a resource. this is sketch.
         provider_name, method = handler.split('.', 1)
-        provider = endpoint_map[provider_name]
+        provider = endpoint_provider_map[provider_name]
         provided_data = getattr(provider, method)(request, **values)
     else:
-        provider = endpoint_map[handler]
+        provider = endpoint_provider_map[handler]
         provided_data = provider(**values)
     response = Response(data.dumps(provided_data), mimetype='application/json')
     return response(environ, start_response)
@@ -87,13 +89,9 @@ route_resource('/courses', provider=data.course, endpoint='courses')
 route_resource('/subjects', provider=data.subject, endpoint='subjects')
 route_resource('/instructors', provider=data.instructor, endpoint='instructors')
 
-urls = url_map.bind('localhost')
-
 
 def get_app():
-    data.course.init()
-    data.subject.init()
-    data.instructor.init()
+    data.Resource.init()
 
     app = api_app
     app = middleware.FieldLimiter(app)
