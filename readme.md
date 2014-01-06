@@ -8,7 +8,7 @@ Note: If you're looking for the easy to use course catalogue for Queen's Univers
 Note also! Work in progress, not live yet. The current live site code is at http://github.com/ChrisCooper/QcumberD
 
 
-Consumes [qcumber data](https://github.com/Queens-Hacks/qcumber-data) and denormalizes/transforms it into endpoints that are nice to work with. The [qcumber frontent](https://github.com/Queens-Hacks/qcumber-frontend) (the main public site for qcumber) consumes this api. Hopefully this api also makes it easy for anyone to make a course wiki or something that wants to hook in with the catalog.
+Consumes [qcumber data](https://github.com/Queens-Hacks/qcumber-data) and denormalizes/transforms it into endpoints that are nice to work with. The [qcumber frontend](https://github.com/Queens-Hacks/qcumber-frontend) (the main public site for qcumber) consumes this api. Hopefully this api also makes it easy for anyone to make a course wiki or something that wants to hook in with the catalog.
 
 This code will also be responsible for managing writes to qcumber-data, so managing the data can all be through this one interface.
 
