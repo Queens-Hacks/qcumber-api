@@ -47,12 +47,14 @@ def dummy_json_app(environ, start_response):
     return response(environ, start_response)
 
 
-def not_found_app(environ, start_response):
-    raise NotFound
+def err_app(environ, start_response):
+    raise error
 
 
-def bad_request_app(environ, start_response):
-    raise BadRequest
+def get_err_app(error):
+    from types import FunctionType
+    app = FunctionType(err_app.func_code, {'error': error})
+    return app
 
 
 class TestConfig(TestCase):
@@ -88,7 +90,7 @@ class TestConfig(TestCase):
             config = get_config(variables, source)
 
 
-class TestData(TestCase):
+class TestRepo(TestCase):
     local_repo = os.path.join(os.getcwd(), 'test', 'test_repo')
 
     @classmethod
@@ -222,14 +224,14 @@ class TestFieldLimiter(TestCase):
 class TestJsonifyHttpException(TestCase):
 
     def test_404_as_json(self):
-        app = JsonifyHttpException(not_found_app)
+        app = JsonifyHttpException(get_err_app(NotFound))
         client = Client(app, BaseResponse)
 
         response = client.get('/nothingtofind')
         self.assertEqual(response.headers['Content-Type'], 'application/json')
 
     def test_bad_request_as_json(self):
-        app = JsonifyHttpException(bad_request_app)
+        app = JsonifyHttpException(get_err_app(BadRequest))
         client = Client(app, BaseResponse)
 
         response = client.get('/alwaysbad')
