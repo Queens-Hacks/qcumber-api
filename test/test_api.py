@@ -53,7 +53,9 @@ def err_app(environ, start_response):
 
 def get_err_app(error):
     from types import FunctionType
-    app = FunctionType(err_app.func_code, {'error': error})
+    # python3 renames func_code to __code__
+    code = err_app.func_code if hasattr(err_app, 'func_code') else err_app.__code__
+    app = FunctionType(code, {'error': error})
     return app
 
 
