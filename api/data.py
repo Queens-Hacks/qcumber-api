@@ -33,6 +33,9 @@ class DataRef(object):
 
     This class keeps track of the reference so that it can be looked up later,
     after all the data has been loaded.
+
+    References in the data files are of the format:
+    ref: {type}/{id}
     """
 
     def __init__(self, data_ref):
