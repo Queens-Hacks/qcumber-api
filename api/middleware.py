@@ -52,6 +52,40 @@ class BeforeAfterMiddleware(object):
     __delattr__ = mutate_error
 
 
+def sort_data(data):
+    """Takes a dictionary and sorts it into an OrderedDict with important keys first.
+    Recursively sorts all nested objects
+    """
+
+    if isinstance(data, list):
+        for x in range(len(data)):
+            data[x] = sort_data(data[x])
+        return data
+    elif isinstance(data, dict):
+        for key in data:
+            data[key] = sort_data(data[key])
+        # continue
+    else:
+        return data
+
+    from collections import OrderedDict
+    custom_key_order = ["link", "uid", "ALL_OTHER_KEYS"]
+    keys = list(data.keys())
+    keys.sort()
+    ordered_data = OrderedDict()
+
+    for cust_key in custom_key_order:
+        if cust_key != "ALL_OTHER_KEYS":
+            if cust_key in data:
+                ordered_data[cust_key] = data[cust_key]
+        else:
+            for key in keys:
+                if key not in custom_key_order:
+                    ordered_data[key] = data[key]
+
+    return ordered_data
+
+
 class DataTransformer(BeforeAfterMiddleware):
     """Flexible accept, nice and normalized for internal use.
 
@@ -78,6 +112,7 @@ class DataTransformer(BeforeAfterMiddleware):
             data = json.loads(body)
 
         if self.local.target == 'application/json':
+            data = sort_data(data)
             cereal = json.dumps(data)
             response.set_data(cereal)
 
