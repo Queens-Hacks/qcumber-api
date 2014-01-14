@@ -126,6 +126,7 @@ class Resource(object):
         resource_data = (self.data_ref_map[k] for k in self.data_ref_map if k.startswith(self.data_dir))
         for data in resource_data:
             api_id = self.get_api_id(self, data)
+            data['uid'] = api_id
             self.api_id_map[api_id] = data
 
     def build_maps(self):
