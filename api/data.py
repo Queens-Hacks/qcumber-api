@@ -187,7 +187,7 @@ class Resource(object):
         return data_list
 
     def item(self, request, api_id):
-        """Retrieve a sinle piece of data by its id"""
+        """Retrieve a single piece of data by its id"""
         try:
             return self.api_id_map[api_id]
         except KeyError:
