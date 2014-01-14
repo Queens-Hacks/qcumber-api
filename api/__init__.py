@@ -105,6 +105,7 @@ def get_app():
 
     app = api_app
     app = middleware.FieldLimiter(app)
+    app = middleware.AbsoluteLinks(app)
     app = middleware.JsonifyHttpException(app)
     app = middleware.DataTransformer(app)
 

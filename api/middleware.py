@@ -163,3 +163,29 @@ class JsonifyHttpException(object):
         except HTTPException as err:
             response = self.jsonify_error(err, environ)
             return response(environ, start_response)
+
+
+class AbsoluteLinks(BeforeAfterMiddleware):
+    """Changes link properties to absolute links instead of relative"""
+
+    def modifiy_links(self, data, root):
+        if isinstance(data, list):
+            for x in range(len(data)):
+                data[x] = self.modifiy_links(data[x], root)
+
+        elif isinstance(data, dict):
+            for key in data:
+                data[key] = self.modifiy_links(data[key], root)
+            if 'link' in data:
+                data['link'] = root[:-1] + data['link']
+
+        return data
+
+    def after(self, request, response):
+        body = response.get_data(as_text=True)
+        data = json.loads(body)
+
+        data = self.modifiy_links(data, request.url_root)
+
+        cereal = json.dumps(data)
+        response.set_data(cereal)
