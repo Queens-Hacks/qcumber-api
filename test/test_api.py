@@ -238,3 +238,18 @@ class TestJsonifyHttpException(TestCase):
 
         response = client.get('/alwaysbad')
         self.assertEqual(response.headers['Content-Type'], 'application/json')
+
+
+class TestAPIApp(TestCase):
+
+    def setUp(self):
+        self.app = api.api_app
+        self.client = Client(self.app, BaseResponse)
+
+    def test_status_ok(self):
+        response = self.client.get('/', headers=[('Accept', 'application/json')])
+        self.assertEqual(response.status_code, 200)
+
+    def test_status_not_found(self):
+        with self.assertRaises(NotFound):
+            response = self.client.get('/notaresource')

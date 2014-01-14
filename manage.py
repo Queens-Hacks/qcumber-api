@@ -63,7 +63,8 @@ def runserver(host="127.0.0.1", port="5000"):
               'Have you installed requirements ($ pip install -r requirements'
               '.txt) or perhaps forgotten to activate a virtualenv?')
         raise SystemExit(1)
-    from api import app as app
+    from api import get_app
+    app = get_app()
     run_simple(host, port_num, app, use_debugger=True, use_reloader=True)
 
 
