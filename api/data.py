@@ -155,8 +155,13 @@ class Resource(object):
         """
         for api_id, data in self.api_id_map.items():
             for key, value in data.items():
+                value_key = value
+                # if value is a proper nested object the unique id
+                if isinstance(value, dict):
+                    if 'link' in value:
+                        value_key = value['link'].get()['uid']
                 try:
-                    self.keysets[key][value].add(api_id)
+                    self.keysets[key][value_key].add(api_id)
                 except TypeError:
                     pass  # unhashable value or something...
 
