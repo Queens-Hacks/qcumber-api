@@ -52,6 +52,9 @@ class BeforeAfterMiddleware(object):
     __delattr__ = mutate_error
 
 
+ERROR_PREFIXES = [4, 5]
+
+
 class DataTransformer(BeforeAfterMiddleware):
     """Flexible accept, nice and normalized for internal use.
 
@@ -62,6 +65,9 @@ class DataTransformer(BeforeAfterMiddleware):
     Responses:
      * JSON-encoded response bodies are transformed to whatever the client
        accepts.
+
+    Should wrap the highest level possible so that any errors thrown in nested
+    wrapped apps will be caught.
     """
 
     def before(self, request):
@@ -78,8 +84,43 @@ class DataTransformer(BeforeAfterMiddleware):
             data = json.loads(body)
 
         if self.local.target == 'application/json':
-            cereal = json.dumps(data)
+            cereal = json.dumps(data, indent=2)
             response.set_data(cereal)
+
+    def jsonify_error(self, http_err, environ):
+        """Creates a error response with body as json"""
+        data = {
+            'status code': http_err.code,
+            'error name': http_err.name,
+            'description': http_err.description
+        }
+
+        response = http_err.get_response(environ)
+        response.data = json.dumps(data)
+        response.headers['content-type'] = 'application/json'
+
+        return response
+
+    def __call__(self, environ, start_response):
+        """Override the default BeforeAfterMiddleware call method to catch errors"""
+        try:
+            # Set up the request and do our pre-processing
+            request = Request(environ)
+            self.before(request)
+
+            # Defer  to the wrapped app, then do our cleanup n stuff
+            response = Response.from_app(self.app, environ)
+
+            if response.status_code/100 in ERROR_PREFIXES:
+                abort(response.status_code)
+
+            self.after(request, response)
+            release_local(self.local)
+
+        except HTTPException as err:
+            response = self.jsonify_error(err, environ)
+
+        return response(environ, start_response)
 
 
 class FieldLimiter(BeforeAfterMiddleware):
@@ -115,62 +156,3 @@ class FieldLimiter(BeforeAfterMiddleware):
 
         cereal = json.dumps(limited_data)
         response.set_data(cereal)
-
-
-class PrettyJSON(BeforeAfterMiddleware):
-    """Prettify JSON responses"""
-
-    def after(self, request, response):
-        if response.headers.get('Content-Type') == 'application/json':
-            body = response.get_data(as_text=True)
-            data = json.loads(body)
-            pretty_data = json.dumps(data, indent=2)
-            response.set_data(pretty_data)
-
-
-class JsonifyHttpException(object):
-    """Format http errors as json, but keep the error status in the response
-
-    Should wrap the highest level possible so that any errors thrown in nested
-    wrapped apps will be caught.
-    """
-
-    def __init__(self, app, error_prefixes=[4, 5]):
-        # Keep a reference to the wsgi app we're wrapping
-        self.app = app
-        self.local = Local()
-        self.error_prefixes = error_prefixes
-
-    def jsonify_error(self, http_err, environ):
-        """Creates a error response with body as json"""
-        data = {
-            'status code': http_err.code,
-            'error name': http_err.name,
-            'description': http_err.description
-        }
-
-        response = http_err.get_response(environ)
-        response.data = json.dumps(data)
-        response.headers['content-type'] = 'application/json'
-
-        return response
-
-    def __call__(self, environ, start_response):
-        """Process a request"""
-        try:
-            # Set up the request
-            request = Request(environ)
-
-            # Defer  to the wrapped app, then do our cleanup
-            response = Response.from_app(self.app, environ)
-
-            if response.status_code/100 in self.error_prefixes:
-                abort(response.status_code)
-
-            release_local(self.local)
-
-            return response(environ, start_response)
-
-        except HTTPException as err:
-            response = self.jsonify_error(err, environ)
-            return response(environ, start_response)

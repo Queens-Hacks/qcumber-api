@@ -34,7 +34,6 @@ from api.middleware import (
     BeforeAfterMiddleware,
     DataTransformer,
     FieldLimiter,
-    JsonifyHttpException,
 )
 
 test_data = {'message': 'hello world', 'errors': []}
@@ -183,8 +182,22 @@ class TestDataTransformer(TestCase):
 
     def test_reject_blah(self):
         c = Client(self.app, BaseResponse)
-        with self.assertRaises(NotAcceptable):
-            resp = c.get('/', headers=[('Accept', 'blah/blah')])
+        response = c.get('/', headers=[('Accept', 'blah/blah')])
+        self.assertEqual(response.status_code, NotAcceptable.code)
+
+    def test_404_as_json(self):
+        app = DataTransformer(get_err_app(NotFound))
+        client = Client(app, BaseResponse)
+
+        response = client.get('/nothingtofind')
+        self.assertEqual(response.headers['Content-Type'], 'application/json')
+
+    def test_bad_request_as_json(self):
+        app = DataTransformer(get_err_app(BadRequest))
+        client = Client(app, BaseResponse)
+
+        response = client.get('/alwaysbad')
+        self.assertEqual(response.headers['Content-Type'], 'application/json')
 
 
 class TestFieldLimiter(TestCase):
@@ -221,20 +234,3 @@ class TestFieldLimiter(TestCase):
         c = Client(wrapped, BaseResponse)
         resp = c.get('/?field=message')
         self.assertEqual(json_resp(resp), [{'message': test_data['message']}] * 2)
-
-
-class TestJsonifyHttpException(TestCase):
-
-    def test_404_as_json(self):
-        app = JsonifyHttpException(get_err_app(NotFound))
-        client = Client(app, BaseResponse)
-
-        response = client.get('/nothingtofind')
-        self.assertEqual(response.headers['Content-Type'], 'application/json')
-
-    def test_bad_request_as_json(self):
-        app = JsonifyHttpException(get_err_app(BadRequest))
-        client = Client(app, BaseResponse)
-
-        response = client.get('/alwaysbad')
-        self.assertEqual(response.headers['Content-Type'], 'application/json')
