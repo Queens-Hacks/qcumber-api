@@ -52,7 +52,7 @@ class BeforeAfterMiddleware(object):
     __delattr__ = mutate_error
 
 
-ERROR_PREFIXES = [4, 5]
+ERROR_PREFIXES = (4, 5)
 
 
 class DataTransformer(BeforeAfterMiddleware):
