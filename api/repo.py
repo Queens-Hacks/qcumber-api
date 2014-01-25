@@ -6,15 +6,15 @@
 """
 
 import os
-import subprocess
 from api import config, ConfigException
+from dulwich.repo import Repo
 
 
 class NotEmptyRepoError(IOError):
     """Raised when an empty folder was expected, ie., for cloning."""
 
 
-def clone():
+def clone(bare=False):
     """Pull in a fresh copy of the data repo."""
     repo_dir = config['DATA_LOCAL']
     repo_uri = config['DATA_REMOTE']
@@ -32,5 +32,5 @@ def clone():
     if len(os.listdir(repo_dir)) > 0:
         raise NotEmptyRepoError()
 
-    # grab some data!
-    subprocess.check_call(['git', 'clone', repo_uri, repo_dir])
+    repo = Repo(repo_uri)
+    repo.clone(repo_dir, mkdir=False, bare=bare)
