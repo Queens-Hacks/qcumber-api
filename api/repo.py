@@ -75,3 +75,13 @@ def commit_changes(message=''):
     repo = Repo(repo_dir)
     c_id = repo.do_commit(message=message, committer='qcumber api <api@qcumber.ca>', ref='refs/heads/master')
     repo.refs['refs/heads/master'] = c_id
+
+
+def push_to_remote():
+    """ Pushing is not yet a feature of dulwich, replace when supported
+    """
+    import subprocess
+    os.chdir(config['DATA_LOCAL'])
+    branchname = 'proposed'
+    subprocess.check_call(['git', 'checkout', '-b', branchname])
+    subprocess.check_call(['git', 'push', '-f', '--set-upstream', config['DATA_REMOTE'], branchname])
