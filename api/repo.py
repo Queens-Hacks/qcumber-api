@@ -34,8 +34,8 @@ def clone(bare=False):
     if len(os.listdir(repo_dir)) > 0:
         raise NotEmptyRepoError()
 
-    repo = Repo(repo_uri)
-    repo.clone(repo_dir, mkdir=False, bare=bare)
+    Repo.init_bare(repo_dir)
+    pull_remote()
 
 
 def pull_remote():

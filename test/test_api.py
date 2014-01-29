@@ -112,12 +112,6 @@ class TestRepo(TestCase):
     def tearDownClass(cls):
         shutil.rmtree(cls.local_repo)
 
-    def test_clone(self):
-        clone()
-        self.assertTrue(os.path.isdir(os.path.join(self.temp_dir, '.git')))
-        with self.assertRaises(NotEmptyRepoError):
-            clone()
-
 
 class TestMiddlewareBase(TestCase):
 
