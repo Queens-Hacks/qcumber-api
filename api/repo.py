@@ -8,6 +8,8 @@
 import os
 from api import config, ConfigException
 from dulwich.repo import Repo
+from dulwich.client import HttpGitClient
+from dulwich import index
 
 
 class NotEmptyRepoError(IOError):
@@ -34,3 +36,13 @@ def clone(bare=False):
 
     repo = Repo(repo_uri)
     repo.clone(repo_dir, mkdir=False, bare=bare)
+
+
+def pull_remote():
+    repo = Repo(repo_dir)
+    client = HttpGitClient(os.path.dirname(config['DATA_REMOTE']))
+    remote_refs = client.fetch(os.path.basename(config['DATA_REMOTE']), repo)
+    repo["HEAD"] = remote_refs["refs/heads/master"]
+    indexfile = repo.index_path()
+    tree = repo["HEAD"].tree
+    index.build_index_from_tree(repo.path, indexfile, repo.object_store, tree)
